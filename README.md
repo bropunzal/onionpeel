@@ -36,7 +36,7 @@ In OnionPeel: enter `http://YOUR_PC_IP:8787` + token → **Link desktop** → co
 
 ## Design
 
-COROS x SATISFY APEX 4–inspired: titanium black canvas, burnt olive + sage accents, IBM Plex Mono–style typewriter data tiles, watch-face metric layout. Browsers stay open; feed sites blocked via Chrome/Edge URL policy.
+Titanium black canvas, burnt olive + sage accents, IBM Plex Mono–style typewriter data tiles, watch-face metric layout. Browsers stay open; feed sites blocked via Chrome/Edge URL policy.
 
 ## What the phone cannot do
 
