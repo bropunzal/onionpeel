@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.ateeb.onionpeel.OnionpeelApp
@@ -20,7 +21,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Polls the desktop companion for peel state. Peel on/off is never decided on the phone.
+ * Polls the desktop companion for peel state and policy. Peel on/off is never decided on the phone.
  */
 class CompanionSyncService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + Job())
@@ -40,19 +41,22 @@ class CompanionSyncService : Service() {
             val controller = app.peelMode
             while (isActive) {
                 if (app.prefs.companionPaired && controller.isDeviceOwner()) {
-                    client.syncPeelDesired()
-                        .onSuccess { desired ->
+                    client.syncFromDesktop()
+                        .onSuccess { sync ->
+                            applyPolicy(app, sync)
                             val active = app.prefs.peelModeActive
-                            if (desired && !active && app.prefs.setupCompleted) {
+                            if (sync.peelDesired && !active && app.prefs.setupCompleted) {
                                 controller.enablePeelMode()
-                            } else if (!desired && active) {
+                            } else if (!sync.peelDesired && active) {
                                 controller.disablePeelMode()
+                            } else if (sync.peelDesired && active) {
+                                controller.reapplyIfActive()
                             }
-                            client.reportPeelState(app.prefs.peelModeActive)
-                            updateNotification(
-                                if (app.prefs.peelModeActive) "Peeled · desktop controls peel"
-                                else "Open · desktop controls peel",
+                            client.reportPeelState(
+                                active = app.prefs.peelModeActive,
+                                apps = loadLaunchableApps(app),
                             )
+                            updateNotification(notificationText(app, sync))
                         }
                         .onFailure {
                             updateNotification("Cannot reach desktop companion")
@@ -70,6 +74,52 @@ class CompanionSyncService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun applyPolicy(app: OnionpeelApp, sync: CompanionSyncPayload) {
+        val prefs = app.prefs
+        if (sync.blockedUrls.isNotEmpty()) {
+            prefs.setBlockedUrls(sync.blockedUrls)
+        }
+        if (sync.allowList.isNotEmpty()) {
+            prefs.setAllowList(sync.allowList)
+        }
+        prefs.exitDelayHours = sync.exitDelayHours
+        if (!prefs.setupCompleted && prefs.companionPaired) {
+            prefs.setupCompleted = true
+        }
+    }
+
+    private fun notificationText(app: OnionpeelApp, sync: CompanionSyncPayload): String {
+        if (sync.unpeelAt != null && sync.unpeelAt > System.currentTimeMillis()) {
+            val hoursLeft = ((sync.unpeelAt - System.currentTimeMillis()) / 3_600_000.0)
+            return "Unpeel in ${"%.1f".format(hoursLeft)}h · desktop controls peel"
+        }
+        return if (app.prefs.peelModeActive) {
+            "Peeled · desktop controls peel"
+        } else {
+            "Open · desktop controls peel"
+        }
+    }
+
+    private fun loadLaunchableApps(app: OnionpeelApp): List<ReportedApp> {
+        val pm = application.packageManager
+        val allow = app.prefs.getAllowList()
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        return pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+            .mapNotNull { resolve ->
+                val pkg = resolve.activityInfo.packageName
+                if (pkg == packageName) return@mapNotNull null
+                ReportedApp(
+                    packageName = pkg,
+                    label = resolve.loadLabel(pm).toString(),
+                    allowed = pkg in allow,
+                )
+            }
+            .distinctBy { it.packageName }
+            .sortedBy { it.label.lowercase() }
+    }
 
     private fun updateNotification(text: String) {
         val nm = getSystemService(NotificationManager::class.java)

@@ -1,0 +1,72 @@
+name: Beta feedback
+description: Report bugs, setup issues, or ideas from the Onionpeel closed beta
+title: "[Beta] "
+labels: ["beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Onionpeel. **Do not paste pairing tokens** — they control your phone.
+
+  - type: input
+    id: device
+    attributes:
+      label: Phone model
+      placeholder: e.g. Samsung Galaxy S24, Pixel 8
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: e.g. Android 14
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Onionpeel version (bottom of phone app)
+      placeholder: e.g. 0.2.0-beta.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: peeled
+    attributes:
+      label: Phone state when issue occurred
+      options:
+        - Peeled
+        - Open
+        - During setup / provisioning
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (if applicable)
+      placeholder: |
+        1. ...
+        2. ...
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, logs, or other context

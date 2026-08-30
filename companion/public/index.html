@@ -25,27 +25,27 @@
       font-family: "IBM Plex Sans", system-ui, sans-serif;
       background: var(--titanium);
       color: var(--khaki);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
+      padding: 32px 20px 48px;
     }
 
-    main {
-      max-width: 400px;
-      width: 100%;
+    .page {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .card {
       border: 1px solid var(--stroke);
       border-radius: 12px;
       background: var(--surface);
-      padding: 28px 24px 24px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
     }
 
     .bezel {
       height: 3px;
       border-radius: 2px;
       background: var(--bezel);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .label {
@@ -54,26 +54,26 @@
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--khaki-muted);
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     h1 {
       font-family: "IBM Plex Mono", monospace;
       font-weight: 500;
-      font-size: 2.75rem;
+      font-size: 2.5rem;
       line-height: 1;
       letter-spacing: 0.12em;
-      margin-bottom: 12px;
-      transition: color 0.3s ease;
+      margin-bottom: 10px;
     }
 
     h1.peeled { color: var(--olive); }
     h1.open { color: var(--sage); }
+    h1.pending { color: var(--khaki); }
 
     .sub {
       font-size: 14px;
       color: var(--khaki-muted);
-      margin-bottom: 28px;
+      margin-bottom: 20px;
       line-height: 1.55;
     }
 
@@ -81,7 +81,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
     .metric {
@@ -104,123 +104,289 @@
 
     .metric span {
       font-family: "IBM Plex Mono", monospace;
-      font-size: 15px;
-      letter-spacing: 0.04em;
+      font-size: 14px;
     }
 
-    .toggle-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 14px;
-    }
-
-    button.peel-toggle {
+    .btn {
       width: 100%;
-      padding: 16px 24px;
+      padding: 14px 20px;
       border-radius: 8px;
       font-family: "IBM Plex Mono", monospace;
       font-weight: 500;
-      font-size: 13px;
-      letter-spacing: 0.14em;
+      font-size: 12px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    }
-
-    button.peel-toggle:active { opacity: 0.88; }
-
-    button.peel-toggle.on {
-      background: var(--olive);
-      color: var(--titanium);
-      border: 1px solid var(--olive);
-    }
-
-    button.peel-toggle.off {
+      border: 1px solid var(--stroke);
       background: transparent;
       color: var(--khaki);
-      border: 1px solid var(--stroke);
     }
 
-    .phone-status {
+    .btn.primary {
+      background: var(--olive);
+      color: var(--titanium);
+      border-color: var(--olive);
+    }
+
+    .btn.small {
+      width: auto;
+      padding: 8px 14px;
+      font-size: 10px;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .row input[type="text"],
+    .row input[type="number"] {
+      flex: 1;
+      background: var(--titanium);
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--khaki);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+    }
+
+    .row input[type="number"] { max-width: 80px; flex: 0 0 80px; }
+
+    .list {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--stroke);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+    }
+
+    .list li:last-child { border-bottom: none; }
+
+    .list button {
+      background: none;
+      border: none;
+      color: var(--khaki-muted);
+      cursor: pointer;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .apps {
+      max-height: 220px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .app-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+
+    .app-row input { accent-color: var(--olive); }
+
+    .app-row small {
+      display: block;
+      color: var(--khaki-muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--khaki-muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .status {
       font-family: "IBM Plex Mono", monospace;
       font-size: 11px;
-      letter-spacing: 0.06em;
       color: var(--khaki-muted);
-      min-height: 18px;
       text-align: center;
+      margin-top: 10px;
     }
 
     .token-box {
-      margin-top: 24px;
+      margin-top: 12px;
       padding: 14px 16px;
       border-radius: 8px;
       background: var(--titanium);
       border: 1px solid var(--stroke);
-      text-align: left;
       font-size: 12px;
       color: var(--khaki-muted);
       word-break: break-all;
-    }
-
-    .token-box strong {
-      display: block;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      color: var(--khaki-muted);
-      font-weight: 400;
     }
 
     .token-box span {
       font-family: "IBM Plex Mono", monospace;
       color: var(--khaki);
     }
+
+    .steps { margin-top: 12px; padding-left: 18px; }
+    .steps li {
+      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--khaki-muted);
+    }
+    .steps li strong {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--khaki);
+      margin-bottom: 4px;
+    }
+    .steps li.warn strong { color: var(--olive); }
+    .steps code {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--khaki);
+      word-break: break-all;
+    }
+    .notes { margin-top: 12px; font-size: 12px; color: var(--khaki-muted); line-height: 1.55; }
+    .notes p { margin-bottom: 8px; }
   </style>
 </head>
 <body>
-  <main>
-    <div class="bezel"></div>
-    <p class="label">Desktop companion</p>
-    <h1 id="hero" class="open">OPEN</h1>
-    <p class="sub" id="subtitle">Your phone cannot turn peel mode off. Only this page can.</p>
+  <div class="page">
+    <div class="card">
+      <div class="bezel"></div>
+      <p class="label">Desktop companion</p>
+      <h1 id="hero" class="open">OPEN</h1>
+      <p class="sub" id="subtitle">Peel, policy, and unpeel delay are controlled here only.</p>
 
-    <div class="metrics">
-      <div class="metric">
-        <strong>Peel state</strong>
-        <span id="metricPeel">open</span>
+      <div class="metrics">
+        <div class="metric">
+          <strong>Peel state</strong>
+          <span id="metricPeel">open</span>
+        </div>
+        <div class="metric">
+          <strong>Phone sync</strong>
+          <span id="metricSync">waiting</span>
+        </div>
       </div>
-      <div class="metric">
-        <strong>Phone sync</strong>
-        <span id="metricSync">waiting</span>
+
+      <button class="btn" id="toggle" type="button">Peel phone</button>
+      <button class="btn small" id="cancelUnpeel" type="button" style="display:none; margin-top:10px; width:100%;">Cancel unpeel</button>
+      <p class="status" id="phoneStatus">Waiting for phone…</p>
+
+      <div class="token-box">
+        <p class="label">Pairing token</p>
+        <span id="token">…</span>
       </div>
     </div>
 
-    <div class="toggle-wrap">
-      <button class="peel-toggle off" id="toggle" type="button">Peel phone</button>
-      <p class="phone-status" id="phoneStatus">Waiting for phone…</p>
+    <div class="card">
+      <p class="label">Unpeel delay</p>
+      <p class="hint">When you request unpeel, the phone stays peeled for this many hours before opening.</p>
+      <div class="row" style="margin-top:12px;">
+        <input type="number" id="exitDelayHours" min="1" max="168" value="24" />
+        <span style="font-size:13px; color: var(--khaki-muted);">hours</span>
+        <button class="btn small" id="saveDelay" type="button">Save</button>
+      </div>
+      <p class="status" id="delayStatus"></p>
     </div>
 
-    <div class="token-box">
-      <strong>Pairing token (enter on phone once)</strong>
-      <span id="token">…</span>
+    <div class="card">
+      <p class="label">Blocked sites</p>
+      <p class="hint">Chrome, Edge & Samsung Internet. Edit anytime — phone syncs within ~15s.</p>
+      <div class="row" style="margin-top:12px;">
+        <input type="text" id="urlInput" placeholder="domain.com" />
+        <button class="btn small" id="addUrl" type="button">Add</button>
+      </div>
+      <ul class="list" id="urlList"></ul>
     </div>
-  </main>
+
+    <div class="card">
+      <p class="label">Allowed apps</p>
+      <p class="hint" id="appsHint">App list appears after the phone syncs once.</p>
+      <div class="apps" id="appList"></div>
+      <button class="btn primary" id="saveApps" type="button" style="margin-top:14px; display:none;">Save allowed apps</button>
+    </div>
+
+    <div class="card">
+      <p class="label">Setup guide (alpha)</p>
+      <p class="hint">Full provisioning — factory reset through daily peel control. Phone URL fills in automatically below.</p>
+      <button class="btn small" id="toggleGuide" type="button" style="margin-top:12px;">Show steps</button>
+      <ol class="steps" id="setupGuide" style="display:none;">
+        <li><strong>1 · Back up</strong>Save photos, contacts, and anything you need. Factory reset erases the phone.</li>
+        <li><strong>2 · Factory reset</strong>Settings → Reset → Factory data reset. Wait for reboot.</li>
+        <li class="warn"><strong>3 · Skip Google account</strong>Tap <em>Skip</em> or <em>Set up offline</em> during setup. Accounts block Device Owner.</li>
+        <li class="warn"><strong>4 · Skip Samsung / OEM account</strong>Samsung: skip Samsung account. Other brands: skip manufacturer sign-in.</li>
+        <li><strong>5 · Wi‑Fi</strong>Join the same network as this PC (required for sync).</li>
+        <li><strong>6 · USB debugging</strong>About phone → tap Build number 7× → Developer options → USB debugging ON.</li>
+        <li><strong>7 · Install APK (PC)</strong>USB cable, File transfer mode. Run: <code>adb install app-debug.apk</code></li>
+        <li class="warn"><strong>8 · Device Owner (PC)</strong>Before any account: <code>adb shell dpm set-device-owner com.ateeb.onionpeel/.admin.OnionpeelDeviceAdminReceiver</code></li>
+        <li><strong>9 · Start companion</strong>You are here. Keep this page open on your PC.</li>
+        <li><strong>10 · Copy URL + token</strong>Phone URL: <code id="phoneUrlHint">http://YOUR_PC_IP:8787</code> · Token shown above.</li>
+        <li class="warn"><strong>11 · Link on phone</strong>Open Onionpeel → enter URL + token → LINK DESKTOP → wait ~15s.</li>
+        <li><strong>12 · Configure here</strong>Set blocked sites, allowed apps, and unpeel delay hours on this page.</li>
+        <li class="warn"><strong>13 · Peel phone</strong>Use the button above. The phone cannot peel or unpeel itself.</li>
+      </ol>
+      <div class="notes" id="setupNotes" style="display:none;">
+        <p>· Google account is OK <em>after</em> step 8 (Gmail, Play Store).</p>
+        <p>· Never add Google or Samsung accounts <em>before</em> Device Owner.</p>
+        <p>· APK updates need the phone OPEN — request unpeel first (installs are blocked while peeled).</p>
+        <p>· Restarting companion generates a new token — re-link on the phone.</p>
+        <p>· Set a fixed token: <code>ONIONPEEL_TOKEN=your-secret npm start</code></p>
+      </div>
+    </div>
+  </div>
 
   <script>
     const TOKEN_KEY = "onionpeel_token";
-    let peelDesired = false;
     let token = localStorage.getItem(TOKEN_KEY);
+    let peelDesired = false;
+    let unpeelAt = null;
+    let exitDelayHours = 24;
+    let blockedUrls = [];
+    let allowList = [];
+    let phoneApps = [];
+    let appsDirty = false;
 
     const hero = document.getElementById("hero");
     const subtitle = document.getElementById("subtitle");
     const toggle = document.getElementById("toggle");
+    const cancelUnpeel = document.getElementById("cancelUnpeel");
     const phoneStatus = document.getElementById("phoneStatus");
     const tokenEl = document.getElementById("token");
     const metricPeel = document.getElementById("metricPeel");
     const metricSync = document.getElementById("metricSync");
+    const urlList = document.getElementById("urlList");
+    const appList = document.getElementById("appList");
+    const appsHint = document.getElementById("appsHint");
+    const saveApps = document.getElementById("saveApps");
+    const delayStatus = document.getElementById("delayStatus");
+    const setupGuide = document.getElementById("setupGuide");
+    const setupNotes = document.getElementById("setupNotes");
+    const toggleGuide = document.getElementById("toggleGuide");
+    const phoneUrlHint = document.getElementById("phoneUrlHint");
+    let guideOpen = false;
+
+    toggleGuide.addEventListener("click", () => {
+      guideOpen = !guideOpen;
+      setupGuide.style.display = guideOpen ? "block" : "none";
+      setupNotes.style.display = guideOpen ? "block" : "none";
+      toggleGuide.textContent = guideOpen ? "Hide steps" : "Show steps";
+    });
 
     async function api(path, opts = {}) {
       const res = await fetch(path, {
@@ -235,40 +401,132 @@
       return res.json();
     }
 
-    function render() {
-      if (peelDesired) {
+    function formatCountdown(ms) {
+      if (ms <= 0) return "0m";
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    function renderUrls() {
+      urlList.innerHTML = "";
+      for (const url of blockedUrls) {
+        const li = document.createElement("li");
+        li.innerHTML = `<span>${url}</span><button type="button" data-url="${url}">Remove</button>`;
+        li.querySelector("button").addEventListener("click", async () => {
+          blockedUrls = blockedUrls.filter((u) => u !== url);
+          await savePolicy({ blockedUrls });
+          renderUrls();
+        });
+        urlList.appendChild(li);
+      }
+    }
+
+    function renderApps() {
+      appList.innerHTML = "";
+      if (!phoneApps.length) {
+        appsHint.textContent = "App list appears after the phone syncs once.";
+        saveApps.style.display = "none";
+        return;
+      }
+      appsHint.textContent = "Check apps the phone may open while peeled. Feed apps stay hard-blocked.";
+      saveApps.style.display = "block";
+      for (const app of phoneApps) {
+        const row = document.createElement("label");
+        row.className = "app-row";
+        const checked = allowList.includes(app.packageName);
+        row.innerHTML = `<input type="checkbox" data-pkg="${app.packageName}" ${checked ? "checked" : ""} /><span>${app.label}<small>${app.packageName}</small></span>`;
+        row.querySelector("input").addEventListener("change", (e) => {
+          const pkg = e.target.dataset.pkg;
+          if (e.target.checked) {
+            if (!allowList.includes(pkg)) allowList.push(pkg);
+          } else {
+            allowList = allowList.filter((p) => p !== pkg);
+          }
+          appsDirty = true;
+        });
+        appList.appendChild(row);
+      }
+    }
+
+    function renderPeel() {
+      const pending = unpeelAt && Date.now() < unpeelAt;
+      if (pending) {
+        hero.textContent = "UNPEELING";
+        hero.className = "pending";
+        const left = formatCountdown(unpeelAt - Date.now());
+        subtitle.textContent = `Phone stays peeled for ${left} more. Cancel to keep focus.`;
+        metricPeel.textContent = `peeled · ${left}`;
+        toggle.textContent = "Unpeel scheduled";
+        toggle.className = "btn";
+        toggle.disabled = true;
+        cancelUnpeel.style.display = "block";
+      } else if (peelDesired) {
         hero.textContent = "PEELED";
         hero.className = "peeled";
-        toggle.textContent = "Unpeel phone";
-        toggle.className = "peel-toggle on";
-        subtitle.textContent = "Feeds are dead. Chrome URLs blocked. Go live your life.";
+        subtitle.textContent = "Feeds are dead. Chrome URLs blocked. Request unpeel to start the delay timer.";
         metricPeel.textContent = "peeled";
+        toggle.textContent = "Request unpeel";
+        toggle.className = "btn primary";
+        toggle.disabled = false;
+        cancelUnpeel.style.display = "none";
       } else {
         hero.textContent = "OPEN";
         hero.className = "open";
-        toggle.textContent = "Peel phone";
-        toggle.className = "peel-toggle off";
         subtitle.textContent = "Phone is unrestricted. Hit peel when you need focus.";
         metricPeel.textContent = "open";
+        toggle.textContent = "Peel phone";
+        toggle.className = "btn";
+        toggle.disabled = false;
+        cancelUnpeel.style.display = "none";
       }
+    }
+
+    async function savePolicy(patch) {
+      const data = await api("/api/policy", {
+        method: "POST",
+        body: JSON.stringify(patch),
+      });
+      blockedUrls = data.blockedUrls || blockedUrls;
+      allowList = data.allowList || allowList;
+      exitDelayHours = data.exitDelayHours || exitDelayHours;
+      document.getElementById("exitDelayHours").value = exitDelayHours;
+      appsDirty = false;
     }
 
     async function refresh() {
       try {
         const data = await fetch("/api/status").then((r) => r.json());
         peelDesired = data.peelDesired;
+        unpeelAt = data.unpeelAt;
+        exitDelayHours = data.exitDelayHours || 24;
+        blockedUrls = data.blockedUrls || [];
+        allowList = data.allowList || [];
         token = data.token;
         localStorage.setItem(TOKEN_KEY, token);
         tokenEl.textContent = token;
+        if (data.phoneUrls?.length) {
+          phoneUrlHint.textContent = data.phoneUrls[0];
+        }
+        document.getElementById("exitDelayHours").value = exitDelayHours;
+        delayStatus.textContent = `Current delay: ${exitDelayHours} hour(s) per unpeel request`;
+
+        if (data.lastPhoneReport?.apps?.length) {
+          phoneApps = data.lastPhoneReport.apps;
+        }
+        if (!appsDirty) renderApps();
+        renderUrls();
+        renderPeel();
+
         if (data.lastPhoneReport) {
           const ago = Math.round((Date.now() - data.lastPhoneReport.at) / 1000);
           const state = data.lastPhoneReport.peelActive ? "peeled" : "open";
           phoneStatus.textContent = `Phone reports ${state} · ${ago}s ago`;
           metricSync.textContent = `${ago}s ago`;
         } else {
+          phoneStatus.textContent = "Waiting for phone sync…";
           metricSync.textContent = "waiting";
         }
-        render();
       } catch (e) {
         phoneStatus.textContent = "Connection error";
         metricSync.textContent = "error";
@@ -283,15 +541,54 @@
           body: JSON.stringify({ enabled: !peelDesired }),
         });
         peelDesired = data.peelDesired;
-        render();
+        unpeelAt = data.unpeelAt;
+        renderPeel();
       } catch (e) {
-        alert("Toggle failed. Refresh the page.");
+        alert("Peel toggle failed.");
       }
       toggle.disabled = false;
     });
 
+    cancelUnpeel.addEventListener("click", async () => {
+      try {
+        const data = await api("/api/peel/cancel", { method: "POST", body: "{}" });
+        peelDesired = data.peelDesired;
+        unpeelAt = data.unpeelAt;
+        renderPeel();
+      } catch (e) {
+        alert("Cancel failed.");
+      }
+    });
+
+    document.getElementById("addUrl").addEventListener("click", async () => {
+      const input = document.getElementById("urlInput");
+      const raw = input.value.trim().toLowerCase();
+      if (!raw) return;
+      let host = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+      if (!blockedUrls.includes(host)) blockedUrls.push(host);
+      input.value = "";
+      await savePolicy({ blockedUrls });
+      renderUrls();
+    });
+
+    document.getElementById("saveDelay").addEventListener("click", async () => {
+      const hours = Number(document.getElementById("exitDelayHours").value);
+      await savePolicy({ exitDelayHours: hours });
+      delayStatus.textContent = `Saved: ${exitDelayHours} hour(s) per unpeel request`;
+    });
+
+    saveApps.addEventListener("click", async () => {
+      await savePolicy({ allowList });
+      appsDirty = false;
+      saveApps.textContent = "Saved";
+      setTimeout(() => { saveApps.textContent = "Save allowed apps"; }, 1500);
+    });
+
     refresh();
-    setInterval(refresh, 5000);
+    setInterval(() => {
+      refresh();
+      if (unpeelAt && Date.now() >= unpeelAt) renderPeel();
+    }, 5000);
   </script>
 </body>
 </html>

@@ -116,8 +116,21 @@ private fun MainScreen(
             }
 
             if (!state.isDeviceOwner) {
+                item {
+                    SetupGuideCard(
+                        isDeviceOwner = false,
+                        companionPaired = false,
+                    )
+                }
                 item { DeviceOwnerCard() }
                 return@LazyColumn
+            }
+
+            item {
+                SetupGuideCard(
+                    isDeviceOwner = true,
+                    companionPaired = state.companionPaired,
+                )
             }
 
             item { HeroStatus(peeled = state.peelModeActive) }
@@ -184,18 +197,52 @@ private fun MainScreen(
 
             if (!state.setupCompleted && state.companionPaired) {
                 item {
-                    Button(
-                        onClick = onCompleteSetup,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = OnionCoral, contentColor = OnionInk),
-                    ) {
-                        Text("FINISH SETUP", style = OnionType.section)
-                    }
+                    Text(
+                        "Waiting for desktop policy sync…",
+                        style = OnionType.body,
+                        color = OnionCreamMuted,
+                    )
                 }
             }
 
-            if (!state.peelModeActive && state.setupCompleted) {
+            if (state.companionPaired && state.setupCompleted) {
+                item {
+                    Text("POLICY", style = OnionType.section, color = OnionCreamMuted)
+                    Text(
+                        "Blocked sites and allowed apps are managed from your desktop browser.",
+                        style = OnionType.body,
+                        color = OnionCreamMuted,
+                    )
+                }
+                item {
+                    Text("BLOCKED SITES", style = OnionType.section, color = OnionCreamMuted)
+                }
+                if (state.blockedUrls.isEmpty()) {
+                    item { Text("None", color = OnionCreamMuted, style = OnionType.body) }
+                } else {
+                    items(state.blockedUrls, key = { it }) { url ->
+                        Text(url, color = OnionCream, style = OnionType.metric)
+                    }
+                }
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text("ALLOWED APPS", style = OnionType.section, color = OnionCreamMuted)
+                }
+                items(state.apps, key = { it.packageName }) { app ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = app.allowed,
+                            onCheckedChange = null,
+                            enabled = false,
+                            colors = CheckboxDefaults.colors(checkedColor = OnionCoral),
+                        )
+                        Column {
+                            Text(app.label, color = OnionCream)
+                            Text(app.packageName, style = OnionType.body, color = OnionCreamMuted)
+                        }
+                    }
+                }
+            } else if (!state.peelModeActive && state.setupCompleted && !state.companionPaired) {
                 item {
                     Text("BLOCKED SITES", style = OnionType.section, color = OnionCreamMuted)
                     Text("Chrome, Edge & Samsung Internet · managed URL policy", style = OnionType.body, color = OnionCreamMuted)
@@ -253,6 +300,16 @@ private fun MainScreen(
                 TextButton(onClick = onRefresh) {
                     Text("Refresh", color = OnionCreamMuted)
                 }
+            }
+
+            item {
+                Text(
+                    "v${state.appVersion} · closed beta",
+                    style = OnionType.body,
+                    color = OnionCreamMuted.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
@@ -347,9 +404,15 @@ private fun SurfaceCard(content: @Composable () -> Unit) {
 @Composable
 private fun DeviceOwnerCard() {
     SurfaceCard {
-        Text("DEVICE OWNER", style = OnionType.section, color = OnionCreamMuted)
+        Text("DEVICE OWNER REQUIRED", style = OnionType.section, color = OnionCreamMuted)
         Spacer(Modifier.height(8.dp))
-        Text("Factory reset · skip Google account · install APK · run:", style = OnionType.body, color = OnionCreamMuted)
+        Text(
+            "Complete steps 1–8 in the setup guide above while no Google or Samsung account is on the phone.",
+            style = OnionType.body,
+            color = OnionCreamMuted,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text("Then run on your PC:", style = OnionType.body, color = OnionCreamMuted)
         Text(
             "adb shell dpm set-device-owner com.ateeb.onionpeel/.admin.OnionpeelDeviceAdminReceiver",
             style = OnionType.metric,

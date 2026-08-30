@@ -9,6 +9,9 @@
 .externalNativeBuild
 .cxx
 /companion/node_modules/
+/companion/state.json
+/companion/.env
+/releases/*.apk
 hs_err_*.log
 replay_*.log
 *.apk

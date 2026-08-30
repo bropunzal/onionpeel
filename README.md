@@ -2,6 +2,15 @@
 
 Allow-list **peel mode** via **Device Owner**, with **desktop-only control** (Shift-style). Peel on/off happens only in the desktop companion browser — the phone shows status and enforces policy.
 
+## Closed beta
+
+**v0.2.0-beta.1** — see **[BETA.md](BETA.md)** for tester onboarding, requirements, and known limitations.
+
+| For testers | For maintainers |
+|-------------|-----------------|
+| [BETA.md](BETA.md) setup guide | `.\scripts\build-beta.ps1` → APK in `releases/` |
+| [Report feedback](https://github.com/bropunzal/dumbphone/issues/new?template=beta-feedback.yml) | [GitHub Releases](https://github.com/bropunzal/dumbphone/releases) + attach APK |
+
 ## Quick start
 
 ### 1. Desktop companion (your PC)
@@ -12,7 +21,7 @@ npm install
 npm start
 ```
 
-Open `http://localhost:8787` — big **PEELED / OPEN** toggle. Copy the pairing token.
+Open `http://localhost:8787` — peel toggle, **blocked sites**, **allowed apps**, and **unpeel delay** (hours). Copy the pairing token.
 
 ### 2. Phone
 

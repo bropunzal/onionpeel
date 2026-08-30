@@ -2,13 +2,14 @@ package com.ateeb.onionpeel.companion
 
 import android.util.Log
 import com.ateeb.onionpeel.data.PrefsRepository
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
 class CompanionClient(private val prefs: PrefsRepository) {
 
-    fun syncPeelDesired(): Result<Boolean> {
+    fun syncFromDesktop(): Result<CompanionSyncPayload> {
         val base = prefs.companionBaseUrl
         val token = prefs.companionToken
         if (base.isBlank() || token.isBlank()) {
@@ -34,7 +35,13 @@ class CompanionClient(private val prefs: PrefsRepository) {
                 val json = JSONObject(body)
                 prefs.lastCompanionSyncMillis = System.currentTimeMillis()
                 prefs.lastCompanionError = ""
-                json.getBoolean("peelDesired")
+                CompanionSyncPayload(
+                    peelDesired = json.getBoolean("peelDesired"),
+                    blockedUrls = json.optJSONArray("blockedUrls").toStringSet(),
+                    allowList = json.optJSONArray("allowList").toStringSet(),
+                    exitDelayHours = json.optInt("exitDelayHours", PrefsRepository.DEFAULT_EXIT_DELAY_HOURS),
+                    unpeelAt = json.optLong("unpeelAt").takeIf { json.has("unpeelAt") && !json.isNull("unpeelAt") && it > 0L },
+                )
             } finally {
                 conn.disconnect()
             }
@@ -44,7 +51,7 @@ class CompanionClient(private val prefs: PrefsRepository) {
         }
     }
 
-    fun reportPeelState(active: Boolean) {
+    fun reportPeelState(active: Boolean, apps: List<ReportedApp>) {
         val base = prefs.companionBaseUrl
         val token = prefs.companionToken
         if (base.isBlank() || token.isBlank()) return
@@ -60,7 +67,19 @@ class CompanionClient(private val prefs: PrefsRepository) {
                 setRequestProperty("Content-Type", "application/json")
             }
             try {
-                val payload = JSONObject().put("peelActive", active).toString()
+                val appsJson = JSONArray()
+                for (app in apps) {
+                    appsJson.put(
+                        JSONObject()
+                            .put("packageName", app.packageName)
+                            .put("label", app.label)
+                            .put("allowed", app.allowed),
+                    )
+                }
+                val payload = JSONObject()
+                    .put("peelActive", active)
+                    .put("apps", appsJson)
+                    .toString()
                 conn.outputStream.use { it.write(payload.toByteArray()) }
                 conn.responseCode
             } finally {
@@ -69,7 +88,23 @@ class CompanionClient(private val prefs: PrefsRepository) {
         }
     }
 
+    private fun JSONArray?.toStringSet(): Set<String> {
+        if (this == null) return emptySet()
+        return buildSet {
+            for (i in 0 until length()) {
+                val value = optString(i)
+                if (value.isNotBlank()) add(value)
+            }
+        }
+    }
+
     companion object {
         private const val TAG = "CompanionClient"
     }
 }
+
+data class ReportedApp(
+    val packageName: String,
+    val label: String,
+    val allowed: Boolean,
+)

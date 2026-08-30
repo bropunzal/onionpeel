@@ -2,6 +2,7 @@ package com.ateeb.onionpeel.ui
 
 import android.app.Application
 import android.content.pm.PackageManager
+import com.ateeb.onionpeel.BuildConfig
 import androidx.lifecycle.AndroidViewModel
 import com.ateeb.onionpeel.OnionpeelApp
 import com.ateeb.onionpeel.companion.CompanionSyncService
@@ -29,6 +30,7 @@ data class MainUiState(
     val apps: List<InstalledApp> = emptyList(),
     val blockedUrls: List<String> = emptyList(),
     val message: String? = null,
+    val appVersion: String = BuildConfig.VERSION_NAME,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -79,7 +81,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleApp(packageName: String) {
-        if (prefs.peelModeActive) return
+        if (prefs.peelModeActive || prefs.companionPaired) return
         val current = prefs.getAllowList().toMutableSet()
         if (packageName in current) current.remove(packageName) else current.add(packageName)
         prefs.setAllowList(current)
@@ -87,7 +89,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addBlockedUrl(url: String) {
-        if (prefs.peelModeActive) return
+        if (prefs.peelModeActive || prefs.companionPaired) return
         val normalized = url.trim().lowercase()
         if (normalized.isEmpty()) return
         prefs.addBlockedUrl(normalized)
@@ -95,7 +97,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun removeBlockedUrl(url: String) {
-        if (prefs.peelModeActive) return
+        if (prefs.peelModeActive || prefs.companionPaired) return
         prefs.removeBlockedUrl(url)
         refresh()
     }
