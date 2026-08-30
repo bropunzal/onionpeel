@@ -1,19 +1,22 @@
 # OnionPeel (Android)
 
-Allow-list **peel mode** via **Device Owner**, with **desktop-only control** (Shift-style). Peel on/off happens only in the desktop companion browser — the phone shows status and enforces policy.
+Allow-list **peel mode** via **Device Owner**, with **browser-only control** (Shift-style). Peel on/off happens only in the cloud companion — the phone shows status and enforces policy.
 
 ## Closed beta
 
-**v0.2.0-beta.1** — see **[BETA.md](BETA.md)** for tester onboarding, requirements, and known limitations.
+**v0.2.0-beta.1** — see **[BETA.md](BETA.md)** for tester onboarding.
 
 | For testers | For maintainers |
 |-------------|-----------------|
-| [BETA.md](BETA.md) setup guide | `.\scripts\build-beta.ps1` → APK in `releases/` |
-| [Report feedback](https://github.com/bropunzal/onionpeel/issues/new?template=beta-feedback.yml) | [GitHub Releases](https://github.com/bropunzal/onionpeel/releases) + attach APK |
+| [BETA.md](BETA.md) setup guide | [CLOUD.md](CLOUD.md) — deploy companion |
+| [Report feedback](https://github.com/bropunzal/onionpeel/issues/new?template=beta-feedback.yml) | [PLAY.md](PLAY.md) — Play closed testing |
+| Install via Play closed testing | `.\scripts\build-release.ps1` → signed AAB |
 
 ## Quick start
 
-### 1. Desktop companion (your PC)
+### 1. Cloud companion
+
+Deploy once (see [CLOUD.md](CLOUD.md)) or run locally for dev:
 
 ```powershell
 cd companion
@@ -21,18 +24,17 @@ npm install
 npm start
 ```
 
-Open `http://localhost:8787` — peel toggle, **blocked sites**, **allowed apps**, and **unpeel delay** (hours). Copy the pairing token.
+Open the companion URL → **Create new device** → copy **Server URL** + **pairing token**.
 
 ### 2. Phone
 
-Factory reset → skip Google → install APK → Device Owner:
+Factory reset → skip Google → install from Play (or `adb install`) → Device Owner:
 
 ```powershell
-adb install app\build\outputs\apk\debug\app-debug.apk
 adb shell dpm set-device-owner com.ateeb.onionpeel/.admin.OnionpeelDeviceAdminReceiver
 ```
 
-In OnionPeel: enter `http://YOUR_PC_IP:8787` + token → **Link desktop** → configure allow-list while **OPEN** → peel from desktop only.
+In OnionPeel: enter `https://YOUR_COMPANION_URL` + token → **Link desktop** → peel from the companion browser only.
 
 ## Design
 
@@ -40,16 +42,15 @@ Titanium black canvas, burnt olive + sage accents, IBM Plex Mono–style typewri
 
 ## What the phone cannot do
 
-- Turn peel on or off (desktop only)
+- Turn peel on or off (companion browser only)
 - Edit allow-list or blocked URLs while peeled
-- Emergency bypass (Shift model — walk to your computer)
+- Emergency bypass (Shift model — open the companion in a browser)
 
 ## Build
 
-Open in Android Studio or:
-
 ```powershell
-.\gradlew.bat assembleDebug
+.\gradlew.bat assembleDebug          # local dev
+.\scripts\build-release.ps1          # signed release AAB + APK (requires keystore)
 ```
 
 Requires JDK 17+ and Android SDK 35.

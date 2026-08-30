@@ -1,6 +1,6 @@
 /**
- * OnionPeel desktop companion — peel, policy, and delayed unpeel are controlled here.
- * Phone polls GET /api/sync on the same Wi-Fi LAN.
+ * OnionPeel cloud companion — peel, policy, and delayed unpeel are controlled here.
+ * Phone polls GET /api/sync over HTTPS (or LAN HTTP in local dev).
  */
 const http = require("http");
 const crypto = require("crypto");
@@ -25,8 +25,11 @@ function loadDotEnv() {
 loadDotEnv();
 
 const PORT = process.env.PORT || 8787;
-const TOKEN = process.env.ONIONPEEL_TOKEN || crypto.randomBytes(16).toString("hex");
-const STATE_FILE = path.join(__dirname, "state.json");
+const LEGACY_TOKEN = process.env.ONIONPEEL_TOKEN || null;
+const PUBLIC_URL = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const DEVICES_FILE = path.join(DATA_DIR, "devices.json");
+const LEGACY_STATE_FILE = path.join(__dirname, "state.json");
 
 const DEFAULT_BLOCKED_URLS = [
   "instagram.com",
@@ -58,14 +61,9 @@ const DEFAULT_ALLOW_LIST = [
   "com.brave.browser",
 ];
 
-function loadState() {
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    }
-  } catch (e) {
-    console.warn("Could not load state.json, using defaults:", e.message);
-  }
+const legacyMode = Boolean(LEGACY_TOKEN);
+
+function defaultDeviceState() {
   return {
     peelDesired: false,
     unpeelAt: null,
@@ -73,13 +71,47 @@ function loadState() {
     blockedUrls: [...DEFAULT_BLOCKED_URLS],
     allowList: [...DEFAULT_ALLOW_LIST],
     lastPhoneReport: null,
+    createdAt: Date.now(),
   };
 }
 
-let state = loadState();
+function loadDevices() {
+  try {
+    if (fs.existsSync(DEVICES_FILE)) {
+      return JSON.parse(fs.readFileSync(DEVICES_FILE, "utf8"));
+    }
+  } catch (e) {
+    console.warn("Could not load devices.json:", e.message);
+  }
+  return {};
+}
 
-function saveState() {
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+let devices = loadDevices();
+
+function saveDevices() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(DEVICES_FILE, JSON.stringify(devices, null, 2));
+}
+
+function migrateLegacyState() {
+  if (!legacyMode || Object.keys(devices).length > 0) return;
+  try {
+    if (fs.existsSync(LEGACY_STATE_FILE)) {
+      const legacy = JSON.parse(fs.readFileSync(LEGACY_STATE_FILE, "utf8"));
+      devices[LEGACY_TOKEN] = { ...defaultDeviceState(), ...legacy };
+      saveDevices();
+      console.log("Migrated legacy state.json to devices.json");
+    }
+  } catch (e) {
+    console.warn("Legacy state migration skipped:", e.message);
+  }
+}
+
+migrateLegacyState();
+
+if (legacyMode && !devices[LEGACY_TOKEN]) {
+  devices[LEGACY_TOKEN] = defaultDeviceState();
+  saveDevices();
 }
 
 function normalizeHost(raw) {
@@ -90,18 +122,18 @@ function normalizeHost(raw) {
   return host;
 }
 
-function effectivePeelDesired() {
+function effectivePeelDesired(state) {
   if (state.unpeelAt && Date.now() >= state.unpeelAt) {
     state.peelDesired = false;
     state.unpeelAt = null;
-    saveState();
+    saveDevices();
   }
   return Boolean(state.peelDesired);
 }
 
-function syncPayload() {
+function syncPayload(state) {
   return {
-    peelDesired: effectivePeelDesired(),
+    peelDesired: effectivePeelDesired(state),
     blockedUrls: state.blockedUrls,
     allowList: state.allowList,
     exitDelayHours: state.exitDelayHours,
@@ -110,41 +142,121 @@ function syncPayload() {
   };
 }
 
-const app = express();
-app.use(express.json());
+function publicServerUrl(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const host = req.get("host");
+  if (host) return `${req.protocol}://${host}`;
+  return `http://localhost:${PORT}`;
+}
+
+function getLanIps() {
+  const nets = require("os").networkInterfaces();
+  const ips = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === "IPv4" && !net.internal) ips.push(net.address);
+    }
+  }
+  return ips;
+}
+
+function phoneUrls(req) {
+  if (PUBLIC_URL) return [PUBLIC_URL];
+  return getLanIps().map((ip) => `http://${ip}:${PORT}`);
+}
+
+function extractToken(req) {
+  const header = req.headers.authorization || "";
+  if (header.startsWith("Bearer ")) return header.slice(7);
+  return req.query.token || "";
+}
 
 function auth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : req.query.token;
-  if (token !== TOKEN) {
+  const token = extractToken(req);
+  const state = devices[token];
+  if (!state) {
     return res.status(401).json({ error: "unauthorized" });
   }
+  req.deviceToken = token;
+  req.deviceState = state;
   next();
 }
 
+// Rate limit device creation: 5 per hour per IP
+const createAttempts = new Map();
+const CREATE_LIMIT = 5;
+const CREATE_WINDOW_MS = 60 * 60 * 1000;
+
+function rateLimitCreate(req, res, next) {
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const entry = createAttempts.get(ip) || { count: 0, resetAt: now + CREATE_WINDOW_MS };
+  if (now > entry.resetAt) {
+    entry.count = 0;
+    entry.resetAt = now + CREATE_WINDOW_MS;
+  }
+  if (entry.count >= CREATE_LIMIT) {
+    return res.status(429).json({ error: "too_many_devices", retryAfterMs: entry.resetAt - now });
+  }
+  entry.count += 1;
+  createAttempts.set(ip, entry);
+  next();
+}
+
+const app = express();
+app.set("trust proxy", true);
+app.use(express.json());
+
+/** Public: server info (no secrets) */
+app.get("/api/info", (req, res) => {
+  res.json({
+    serverUrl: publicServerUrl(req),
+    legacyMode,
+    multiDevice: !legacyMode,
+  });
+});
+
+/** Public: create a new paired device (multi-device mode only) */
+app.post("/api/devices", rateLimitCreate, (req, res) => {
+  if (legacyMode) {
+    return res.status(400).json({
+      error: "legacy_mode",
+      message: "This server uses a fixed ONIONPEEL_TOKEN. Use that token instead of creating a device.",
+    });
+  }
+  const token = crypto.randomBytes(24).toString("hex");
+  devices[token] = defaultDeviceState();
+  saveDevices();
+  res.status(201).json({
+    token,
+    serverUrl: publicServerUrl(req),
+  });
+});
+
 /** Phone polls this every ~15s */
 app.get("/api/sync", auth, (req, res) => {
-  res.json(syncPayload());
+  res.json(syncPayload(req.deviceState));
 });
 
 /** Phone reports enforcement state + installed app catalog */
 app.post("/api/phone/report", auth, (req, res) => {
-  state.lastPhoneReport = {
+  req.deviceState.lastPhoneReport = {
     peelActive: Boolean(req.body.peelActive),
     apps: Array.isArray(req.body.apps) ? req.body.apps : [],
     at: Date.now(),
   };
-  saveState();
+  saveDevices();
   res.json({ ok: true });
 });
 
-/** Desktop: peel immediately, or schedule delayed unpeel */
+/** Browser: peel immediately, or schedule delayed unpeel */
 app.post("/api/peel", auth, (req, res) => {
+  const state = req.deviceState;
   const enabled = Boolean(req.body.enabled);
   if (enabled) {
     state.peelDesired = true;
     state.unpeelAt = null;
-  } else if (state.peelDesired || effectivePeelDesired()) {
+  } else if (state.peelDesired || effectivePeelDesired(state)) {
     const hours = Math.min(168, Math.max(1, Number(state.exitDelayHours) || 24));
     state.exitDelayHours = hours;
     state.peelDesired = true;
@@ -153,24 +265,26 @@ app.post("/api/peel", auth, (req, res) => {
     state.peelDesired = false;
     state.unpeelAt = null;
   }
-  saveState();
+  saveDevices();
   res.json({
-    peelDesired: effectivePeelDesired(),
+    peelDesired: effectivePeelDesired(state),
     unpeelAt: state.unpeelAt,
     exitDelayHours: state.exitDelayHours,
   });
 });
 
-/** Desktop: cancel a pending delayed unpeel */
+/** Browser: cancel a pending delayed unpeel */
 app.post("/api/peel/cancel", auth, (req, res) => {
+  const state = req.deviceState;
   state.unpeelAt = null;
   state.peelDesired = true;
-  saveState();
-  res.json({ peelDesired: effectivePeelDesired(), unpeelAt: null });
+  saveDevices();
+  res.json({ peelDesired: effectivePeelDesired(state), unpeelAt: null });
 });
 
-/** Desktop: update blocked URLs, allow-list, unpeel delay hours */
+/** Browser: update blocked URLs, allow-list, unpeel delay hours */
 app.post("/api/policy", auth, (req, res) => {
+  const state = req.deviceState;
   if (Array.isArray(req.body.blockedUrls)) {
     state.blockedUrls = [
       ...new Set(req.body.blockedUrls.map(normalizeHost).filter(Boolean)),
@@ -185,7 +299,7 @@ app.post("/api/policy", auth, (req, res) => {
       state.exitDelayHours = Math.min(168, Math.max(1, Math.round(hours)));
     }
   }
-  saveState();
+  saveDevices();
   res.json({
     blockedUrls: state.blockedUrls,
     allowList: state.allowList,
@@ -193,46 +307,39 @@ app.post("/api/policy", auth, (req, res) => {
   });
 });
 
-app.get("/api/status", (req, res) => {
+/** Browser: dashboard state (requires auth) */
+app.get("/api/status", auth, (req, res) => {
+  const state = req.deviceState;
   res.json({
-    peelDesired: effectivePeelDesired(),
+    peelDesired: effectivePeelDesired(state),
     unpeelAt: state.unpeelAt,
     exitDelayHours: state.exitDelayHours,
     blockedUrls: state.blockedUrls,
     allowList: state.allowList,
     lastPhoneReport: state.lastPhoneReport,
-    token: TOKEN,
     serverTime: Date.now(),
-    phoneUrls: phoneUrls(),
-    browserUrl: `http://localhost:${PORT}`,
+    serverUrl: publicServerUrl(req),
+    phoneUrls: phoneUrls(req),
   });
 });
 
 app.use(express.static(path.join(__dirname, "public")));
 
-function getLanIps() {
-  const nets = require("os").networkInterfaces();
-  const ips = [];
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] || []) {
-      if (net.family === "IPv4" && !net.internal) ips.push(net.address);
-    }
-  }
-  return ips;
-}
-
-function phoneUrls() {
-  return getLanIps().map((ip) => `http://${ip}:${PORT}`);
-}
-
 const server = http.createServer(app);
 server.listen(PORT, "0.0.0.0", () => {
   const ips = getLanIps();
-  const tokenSource = process.env.ONIONPEEL_TOKEN ? "from ONIONPEEL_TOKEN / .env" : "random (set ONIONPEEL_TOKEN for beta)";
-  console.log("\n  OnionPeel companion — closed beta\n");
-  console.log(`  Browser:  http://localhost:${PORT}`);
-  for (const ip of ips) {
-    console.log(`  Phone URL: http://${ip}:${PORT}`);
+  console.log("\n  OnionPeel companion\n");
+  if (PUBLIC_URL) {
+    console.log(`  Public URL: ${PUBLIC_URL}`);
+  } else {
+    console.log(`  Browser:  http://localhost:${PORT}`);
+    for (const ip of ips) {
+      console.log(`  LAN URL:  http://${ip}:${PORT}`);
+    }
   }
-  console.log(`\n  Pairing token (${tokenSource}): ${TOKEN}\n`);
+  if (legacyMode) {
+    console.log(`\n  Legacy mode — fixed token: ${LEGACY_TOKEN}\n`);
+  } else {
+    console.log("\n  Multi-device mode — create devices at /api/devices or in the web UI\n");
+  }
 });

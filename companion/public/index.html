@@ -263,10 +263,76 @@
     }
     .notes { margin-top: 12px; font-size: 12px; color: var(--khaki-muted); line-height: 1.55; }
     .notes p { margin-bottom: 8px; }
+
+    .pairing-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(14, 14, 12, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .pairing-card {
+      max-width: 420px;
+      width: 100%;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 28px 24px;
+    }
+
+    .pairing-card h2 {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .pairing-card p { font-size: 13px; color: var(--khaki-muted); line-height: 1.55; margin-bottom: 16px; }
+
+    .pairing-card input {
+      width: 100%;
+      background: var(--titanium);
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--khaki);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .pairing-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+
+    .main-app { display: none; }
+    .main-app.ready { display: block; }
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="pairing-overlay" id="pairingOverlay">
+    <div class="pairing-card">
+      <p class="label">OnionPeel</p>
+      <h2>Link this browser</h2>
+      <p>Create a new device pairing or enter an existing token from another browser.</p>
+      <div id="legacyHint" class="hint" style="display:none; margin-bottom:12px;">
+        This server uses a fixed token from <code>ONIONPEEL_TOKEN</code>. Enter that token below.
+      </div>
+      <p class="label" style="margin-top:8px;">Server URL (for phone)</p>
+      <input type="text" id="serverUrlInput" readonly />
+      <p class="label">Pairing token</p>
+      <input type="text" id="tokenInput" placeholder="Paste existing token or create below" />
+      <div class="pairing-actions">
+        <button class="btn primary" id="enterTokenBtn" type="button">Use token</button>
+        <button class="btn" id="createDeviceBtn" type="button">Create new device</button>
+      </div>
+      <p class="status" id="pairingStatus"></p>
+    </div>
+  </div>
+
+  <div class="page main-app" id="mainApp">
     <div class="card">
       <div class="bezel"></div>
       <p class="label">Desktop companion</p>
@@ -289,6 +355,10 @@
       <p class="status" id="phoneStatus">Waiting for phone…</p>
 
       <div class="token-box">
+        <p class="label">Server URL (enter on phone)</p>
+        <span id="serverUrl">…</span>
+      </div>
+      <div class="token-box" style="margin-top:10px;">
         <p class="label">Pairing token</p>
         <span id="token">…</span>
       </div>
@@ -323,20 +393,20 @@
     </div>
 
     <div class="card">
-      <p class="label">Setup guide (alpha)</p>
-      <p class="hint">Full provisioning — factory reset through daily peel control. Phone URL fills in automatically below.</p>
+      <p class="label">Setup guide</p>
+      <p class="hint">Factory reset through daily peel control. Server URL fills in automatically below.</p>
       <button class="btn small" id="toggleGuide" type="button" style="margin-top:12px;">Show steps</button>
       <ol class="steps" id="setupGuide" style="display:none;">
         <li><strong>1 · Back up</strong>Save photos, contacts, and anything you need. Factory reset erases the phone.</li>
         <li><strong>2 · Factory reset</strong>Settings → Reset → Factory data reset. Wait for reboot.</li>
         <li class="warn"><strong>3 · Skip Google account</strong>Tap <em>Skip</em> or <em>Set up offline</em> during setup. Accounts block Device Owner.</li>
         <li class="warn"><strong>4 · Skip Samsung / OEM account</strong>Samsung: skip Samsung account. Other brands: skip manufacturer sign-in.</li>
-        <li><strong>5 · Wi‑Fi</strong>Join the same network as this PC (required for sync).</li>
+        <li><strong>5 · Wi‑Fi</strong>Connect to any network with internet (cloud sync — no PC on same Wi‑Fi needed).</li>
         <li><strong>6 · USB debugging</strong>About phone → tap Build number 7× → Developer options → USB debugging ON.</li>
-        <li><strong>7 · Install APK (PC)</strong>USB cable, File transfer mode. Run: <code>adb install app-debug.apk</code></li>
+        <li><strong>7 · Install app</strong>From Google Play closed testing, or: <code>adb install app.apk</code> on a PC.</li>
         <li class="warn"><strong>8 · Device Owner (PC)</strong>Before any account: <code>adb shell dpm set-device-owner com.ateeb.onionpeel/.admin.OnionpeelDeviceAdminReceiver</code></li>
-        <li><strong>9 · Start companion</strong>You are here. Keep this page open on your PC.</li>
-        <li><strong>10 · Copy URL + token</strong>Phone URL: <code id="phoneUrlHint">http://YOUR_PC_IP:8787</code> · Token shown above.</li>
+        <li><strong>9 · Create device here</strong>Click <em>Create new device</em> above (or use existing token).</li>
+        <li><strong>10 · Copy URL + token</strong>Server URL: <code id="phoneUrlHint">https://your-server</code> · Token shown above.</li>
         <li class="warn"><strong>11 · Link on phone</strong>Open OnionPeel → enter URL + token → LINK DESKTOP → wait ~15s.</li>
         <li><strong>12 · Configure here</strong>Set blocked sites, allowed apps, and unpeel delay hours on this page.</li>
         <li class="warn"><strong>13 · Peel phone</strong>Use the button above. The phone cannot peel or unpeel itself.</li>
@@ -344,9 +414,8 @@
       <div class="notes" id="setupNotes" style="display:none;">
         <p>· Google account is OK <em>after</em> step 8 (Gmail, Play Store).</p>
         <p>· Never add Google or Samsung accounts <em>before</em> Device Owner.</p>
-        <p>· APK updates need the phone OPEN — request unpeel first (installs are blocked while peeled).</p>
-        <p>· Restarting companion generates a new token — re-link on the phone.</p>
-        <p>· Set a fixed token: <code>ONIONPEEL_TOKEN=your-secret npm start</code></p>
+        <p>· App updates need the phone OPEN — request unpeel first (installs are blocked while peeled).</p>
+        <p>· Save your pairing token — you need it to control peel from any browser.</p>
       </div>
     </div>
   </div>
@@ -354,6 +423,8 @@
   <script>
     const TOKEN_KEY = "onionpeel_token";
     let token = localStorage.getItem(TOKEN_KEY);
+    let serverUrl = "";
+    let legacyMode = false;
     let peelDesired = false;
     let unpeelAt = null;
     let exitDelayHours = 24;
@@ -361,6 +432,15 @@
     let allowList = [];
     let phoneApps = [];
     let appsDirty = false;
+    let refreshTimer = null;
+
+    const pairingOverlay = document.getElementById("pairingOverlay");
+    const mainApp = document.getElementById("mainApp");
+    const pairingStatus = document.getElementById("pairingStatus");
+    const serverUrlInput = document.getElementById("serverUrlInput");
+    const tokenInput = document.getElementById("tokenInput");
+    const legacyHint = document.getElementById("legacyHint");
+    const createDeviceBtn = document.getElementById("createDeviceBtn");
 
     const hero = document.getElementById("hero");
     const subtitle = document.getElementById("subtitle");
@@ -368,6 +448,7 @@
     const cancelUnpeel = document.getElementById("cancelUnpeel");
     const phoneStatus = document.getElementById("phoneStatus");
     const tokenEl = document.getElementById("token");
+    const serverUrlEl = document.getElementById("serverUrl");
     const metricPeel = document.getElementById("metricPeel");
     const metricSync = document.getElementById("metricSync");
     const urlList = document.getElementById("urlList");
@@ -380,6 +461,73 @@
     const toggleGuide = document.getElementById("toggleGuide");
     const phoneUrlHint = document.getElementById("phoneUrlHint");
     let guideOpen = false;
+
+    async function loadServerInfo() {
+      const info = await fetch("/api/info").then((r) => r.json());
+      serverUrl = info.serverUrl;
+      legacyMode = info.legacyMode;
+      serverUrlInput.value = serverUrl;
+      legacyHint.style.display = legacyMode ? "block" : "none";
+      createDeviceBtn.style.display = legacyMode ? "none" : "block";
+    }
+
+    function showApp() {
+      pairingOverlay.style.display = "none";
+      mainApp.classList.add("ready");
+      tokenEl.textContent = token;
+      serverUrlEl.textContent = serverUrl;
+      if (phoneUrlHint) phoneUrlHint.textContent = serverUrl;
+      if (!refreshTimer) {
+        refresh();
+        refreshTimer = setInterval(() => {
+          refresh();
+          if (unpeelAt && Date.now() >= unpeelAt) renderPeel();
+        }, 5000);
+      }
+    }
+
+    async function enterWithToken(value) {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        pairingStatus.textContent = "Enter a pairing token.";
+        return;
+      }
+      pairingStatus.textContent = "Checking token…";
+      const res = await fetch("/api/status", {
+        headers: { Authorization: `Bearer ${trimmed}` },
+      });
+      if (!res.ok) {
+        pairingStatus.textContent = "Invalid token. Create a new device or check your saved token.";
+        return;
+      }
+      token = trimmed;
+      localStorage.setItem(TOKEN_KEY, token);
+      pairingStatus.textContent = "";
+      showApp();
+    }
+
+    document.getElementById("enterTokenBtn").addEventListener("click", () => {
+      enterWithToken(tokenInput.value).catch(() => {
+        pairingStatus.textContent = "Connection error.";
+      });
+    });
+
+    createDeviceBtn.addEventListener("click", async () => {
+      pairingStatus.textContent = "Creating device…";
+      try {
+        const res = await fetch("/api/devices", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "create failed");
+        token = data.token;
+        serverUrl = data.serverUrl || serverUrl;
+        tokenInput.value = token;
+        localStorage.setItem(TOKEN_KEY, token);
+        pairingStatus.textContent = "Device created. Save your token — it cannot be recovered.";
+        showApp();
+      } catch (e) {
+        pairingStatus.textContent = "Could not create device. Try again later.";
+      }
+    });
 
     toggleGuide.addEventListener("click", () => {
       guideOpen = !guideOpen;
@@ -397,6 +545,11 @@
           ...(opts.headers || {}),
         },
       });
+      if (res.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        location.reload();
+        throw new Error("unauthorized");
+      }
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     }
@@ -496,18 +649,16 @@
 
     async function refresh() {
       try {
-        const data = await fetch("/api/status").then((r) => r.json());
+        const data = await api("/api/status");
         peelDesired = data.peelDesired;
         unpeelAt = data.unpeelAt;
         exitDelayHours = data.exitDelayHours || 24;
         blockedUrls = data.blockedUrls || [];
         allowList = data.allowList || [];
-        token = data.token;
-        localStorage.setItem(TOKEN_KEY, token);
+        serverUrl = data.serverUrl || serverUrl;
         tokenEl.textContent = token;
-        if (data.phoneUrls?.length) {
-          phoneUrlHint.textContent = data.phoneUrls[0];
-        }
+        serverUrlEl.textContent = serverUrl;
+        if (phoneUrlHint) phoneUrlHint.textContent = serverUrl;
         document.getElementById("exitDelayHours").value = exitDelayHours;
         delayStatus.textContent = `Current delay: ${exitDelayHours} hour(s) per unpeel request`;
 
@@ -528,8 +679,10 @@
           metricSync.textContent = "waiting";
         }
       } catch (e) {
-        phoneStatus.textContent = "Connection error";
-        metricSync.textContent = "error";
+        if (e.message !== "unauthorized") {
+          phoneStatus.textContent = "Connection error";
+          metricSync.textContent = "error";
+        }
       }
     }
 
@@ -584,11 +737,16 @@
       setTimeout(() => { saveApps.textContent = "Save allowed apps"; }, 1500);
     });
 
-    refresh();
-    setInterval(() => {
-      refresh();
-      if (unpeelAt && Date.now() >= unpeelAt) renderPeel();
-    }, 5000);
+    loadServerInfo()
+      .then(() => {
+        if (token) {
+          tokenInput.value = token;
+          return enterWithToken(token);
+        }
+      })
+      .catch(() => {
+        pairingStatus.textContent = "Could not reach server.";
+      });
   </script>
 </body>
 </html>

@@ -58,7 +58,7 @@ private val provisioningSteps = listOf(
     SetupStep(
         5,
         "Connect Wi‑Fi",
-        "Use the same network as your PC. Required for desktop companion sync.",
+        "Any network with internet. Cloud sync works over HTTPS — no PC on the same Wi‑Fi needed.",
     ),
     SetupStep(
         6,
@@ -67,8 +67,8 @@ private val provisioningSteps = listOf(
     ),
     SetupStep(
         7,
-        "Install APK from PC",
-        "Plug in USB (File transfer). On PC run:\nadb install app-debug.apk",
+        "Install app",
+        "From Google Play closed testing, or on a PC:\nadb install app.apk",
     ),
     SetupStep(
         8,
@@ -81,29 +81,29 @@ private val provisioningSteps = listOf(
 private val companionSteps = listOf(
     SetupStep(
         9,
-        "Start desktop companion",
-        "On your PC: cd companion → npm start. Open the browser page shown in the terminal.",
+        "Open cloud companion",
+        "Go to the OnionPeel companion URL in any browser. Click Create new device.",
     ),
     SetupStep(
         10,
         "Copy URL + token",
-        "From the desktop page: copy Phone URL (http://YOUR_PC_IP:8787) and the pairing token.",
+        "Copy Server URL (https://…) and pairing token from the companion page.",
     ),
     SetupStep(
         11,
-        "Link desktop (this app)",
-        "Enter URL + token below → LINK DESKTOP. Wait ~15 seconds for first sync.",
+        "Link companion (this app)",
+        "Enter Server URL + token below → LINK DESKTOP. Wait ~15 seconds for first sync.",
         highlight = true,
     ),
     SetupStep(
         12,
-        "Configure on desktop",
-        "Blocked sites, allowed apps, and unpeel delay hours are edited only in the desktop browser.",
+        "Configure in browser",
+        "Blocked sites, allowed apps, and unpeel delay hours are edited only in the companion browser.",
     ),
     SetupStep(
         13,
-        "Peel from desktop",
-        "Hit Peel phone on your PC. The phone cannot peel or unpeel itself.",
+        "Peel from browser",
+        "Hit Peel phone in the companion. The phone cannot peel or unpeel itself.",
         highlight = true,
     ),
 )
@@ -111,8 +111,8 @@ private val companionSteps = listOf(
 private val afterSetupNotes = listOf(
     "You may add a Google account after Device Owner is set (Gmail, Play Store, backup).",
     "Do not add accounts before step 8 or set-device-owner will fail.",
-    "App updates via adb require the phone to be OPEN — request unpeel from desktop first.",
-    "If companion restarts, copy the new token and re-link on the phone.",
+    "App updates require the phone to be OPEN — request unpeel from the companion first.",
+    "Save your pairing token — you need it to control peel from any browser.",
 )
 
 @Composable
@@ -138,7 +138,7 @@ fun SetupGuideCard(
         Text(
             when {
                 !isDeviceOwner -> "Alpha setup — factory reset required before Device Owner."
-                !companionPaired -> "Device Owner OK. Link the desktop companion next."
+                !companionPaired -> "Device Owner OK. Link the cloud companion next."
                 else -> "Reference — provisioning and daily control."
             },
             style = OnionType.body,

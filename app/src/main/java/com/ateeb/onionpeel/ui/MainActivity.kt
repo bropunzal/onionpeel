@@ -433,7 +433,7 @@ private fun CompanionPairCard(
         Text("DESKTOP COMPANION", style = OnionType.section, color = OnionCreamMuted)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Run companion on your PC (npm start). Copy URL + token from the browser page.",
+            "Run companion on your PC (npm start) or use the cloud URL from CLOUD.md.",
             style = OnionType.body,
             color = OnionCreamMuted,
         )
@@ -441,7 +441,7 @@ private fun CompanionPairCard(
         OutlinedTextField(
             value = url,
             onValueChange = onUrlChange,
-            label = { Text("http://192.168.x.x:8787") },
+            label = { Text("https://onionpeel.example.com") },
             modifier = Modifier.fillMaxWidth(),
             colors = onionFieldColors(),
             shape = RoundedCornerShape(8.dp),
@@ -487,7 +487,7 @@ private fun PreviewPeeled() {
                 peelModeActive = true,
                 setupCompleted = true,
                 companionPaired = true,
-                companionUrl = "http://192.168.1.10:8787",
+                companionUrl = "https://onionpeel.example.com",
             ),
             onCompleteSetup = {}, onSaveCompanion = { _, _ -> },
             onToggleApp = {}, onAddUrl = {}, onRemoveUrl = {}, onRefresh = {},

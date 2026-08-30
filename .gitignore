@@ -10,8 +10,13 @@
 .cxx
 /companion/node_modules/
 /companion/state.json
+/companion/devices.json
 /companion/.env
 /releases/*.apk
+/releases/*.aab
+keystore.properties
+*.jks
+*.keystore
 hs_err_*.log
 replay_*.log
 *.apk

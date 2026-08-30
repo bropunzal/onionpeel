@@ -4,6 +4,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+import java.io.File
+import java.util.Properties
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
 android {
     namespace = "com.ateeb.onionpeel"
     compileSdk = 35
@@ -16,6 +25,23 @@ android {
         versionName = "0.2.0-beta.1"
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = keystoreProperties.getProperty("storeFile")
+                ?: System.getenv("ONIONPEEL_KEYSTORE")
+            if (!storeFilePath.isNullOrBlank()) {
+                val keystoreFile = File(storeFilePath)
+                storeFile = if (keystoreFile.isAbsolute) keystoreFile else rootProject.file(storeFilePath)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                    ?: System.getenv("ONIONPEEL_KEYSTORE_PASSWORD")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                    ?: System.getenv("ONIONPEEL_KEY_ALIAS")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                    ?: System.getenv("ONIONPEEL_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -23,6 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
