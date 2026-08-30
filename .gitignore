@@ -4,9 +4,13 @@
 /.idea/
 .DS_Store
 /build
+/app/build/
 /captures
 .externalNativeBuild
 .cxx
+/companion/node_modules/
+hs_err_*.log
+replay_*.log
 *.apk
 *.ap_
 *.aab

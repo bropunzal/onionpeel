@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Onionpeel</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap");
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --titanium: #0e0e0c;
+      --olive: #6d6848;
+      --sage: #9cb896;
+      --khaki: #c9bfa3;
+      --khaki-muted: rgba(138, 130, 112, 0.72);
+      --surface: #1a1916;
+      --stroke: rgba(90, 87, 68, 0.35);
+      --bezel: #2a2926;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: var(--titanium);
+      color: var(--khaki);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    main {
+      max-width: 400px;
+      width: 100%;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 28px 24px 24px;
+    }
+
+    .bezel {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--bezel);
+      margin-bottom: 24px;
+    }
+
+    .label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--khaki-muted);
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 500;
+      font-size: 2.75rem;
+      line-height: 1;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+      transition: color 0.3s ease;
+    }
+
+    h1.peeled { color: var(--olive); }
+    h1.open { color: var(--sage); }
+
+    .sub {
+      font-size: 14px;
+      color: var(--khaki-muted);
+      margin-bottom: 28px;
+      line-height: 1.55;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .metric {
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--titanium);
+    }
+
+    .metric strong {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--khaki-muted);
+      margin-bottom: 6px;
+      font-weight: 400;
+    }
+
+    .metric span {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+    }
+
+    .toggle-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+    }
+
+    button.peel-toggle {
+      width: 100%;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    button.peel-toggle:active { opacity: 0.88; }
+
+    button.peel-toggle.on {
+      background: var(--olive);
+      color: var(--titanium);
+      border: 1px solid var(--olive);
+    }
+
+    button.peel-toggle.off {
+      background: transparent;
+      color: var(--khaki);
+      border: 1px solid var(--stroke);
+    }
+
+    .phone-status {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--khaki-muted);
+      min-height: 18px;
+      text-align: center;
+    }
+
+    .token-box {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: var(--titanium);
+      border: 1px solid var(--stroke);
+      text-align: left;
+      font-size: 12px;
+      color: var(--khaki-muted);
+      word-break: break-all;
+    }
+
+    .token-box strong {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: var(--khaki-muted);
+      font-weight: 400;
+    }
+
+    .token-box span {
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--khaki);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="bezel"></div>
+    <p class="label">Desktop companion</p>
+    <h1 id="hero" class="open">OPEN</h1>
+    <p class="sub" id="subtitle">Your phone cannot turn peel mode off. Only this page can.</p>
+
+    <div class="metrics">
+      <div class="metric">
+        <strong>Peel state</strong>
+        <span id="metricPeel">open</span>
+      </div>
+      <div class="metric">
+        <strong>Phone sync</strong>
+        <span id="metricSync">waiting</span>
+      </div>
+    </div>
+
+    <div class="toggle-wrap">
+      <button class="peel-toggle off" id="toggle" type="button">Peel phone</button>
+      <p class="phone-status" id="phoneStatus">Waiting for phone…</p>
+    </div>
+
+    <div class="token-box">
+      <strong>Pairing token (enter on phone once)</strong>
+      <span id="token">…</span>
+    </div>
+  </main>
+
+  <script>
+    const TOKEN_KEY = "onionpeel_token";
+    let peelDesired = false;
+    let token = localStorage.getItem(TOKEN_KEY);
+
+    const hero = document.getElementById("hero");
+    const subtitle = document.getElementById("subtitle");
+    const toggle = document.getElementById("toggle");
+    const phoneStatus = document.getElementById("phoneStatus");
+    const tokenEl = document.getElementById("token");
+    const metricPeel = document.getElementById("metricPeel");
+    const metricSync = document.getElementById("metricSync");
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        ...opts,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...(opts.headers || {}),
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    function render() {
+      if (peelDesired) {
+        hero.textContent = "PEELED";
+        hero.className = "peeled";
+        toggle.textContent = "Unpeel phone";
+        toggle.className = "peel-toggle on";
+        subtitle.textContent = "Feeds are dead. Chrome URLs blocked. Go live your life.";
+        metricPeel.textContent = "peeled";
+      } else {
+        hero.textContent = "OPEN";
+        hero.className = "open";
+        toggle.textContent = "Peel phone";
+        toggle.className = "peel-toggle off";
+        subtitle.textContent = "Phone is unrestricted. Hit peel when you need focus.";
+        metricPeel.textContent = "open";
+      }
+    }
+
+    async function refresh() {
+      try {
+        const data = await fetch("/api/status").then((r) => r.json());
+        peelDesired = data.peelDesired;
+        token = data.token;
+        localStorage.setItem(TOKEN_KEY, token);
+        tokenEl.textContent = token;
+        if (data.lastPhoneReport) {
+          const ago = Math.round((Date.now() - data.lastPhoneReport.at) / 1000);
+          const state = data.lastPhoneReport.peelActive ? "peeled" : "open";
+          phoneStatus.textContent = `Phone reports ${state} · ${ago}s ago`;
+          metricSync.textContent = `${ago}s ago`;
+        } else {
+          metricSync.textContent = "waiting";
+        }
+        render();
+      } catch (e) {
+        phoneStatus.textContent = "Connection error";
+        metricSync.textContent = "error";
+      }
+    }
+
+    toggle.addEventListener("click", async () => {
+      toggle.disabled = true;
+      try {
+        const data = await api("/api/peel", {
+          method: "POST",
+          body: JSON.stringify({ enabled: !peelDesired }),
+        });
+        peelDesired = data.peelDesired;
+        render();
+      } catch (e) {
+        alert("Toggle failed. Refresh the page.");
+      }
+      toggle.disabled = false;
+    });
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

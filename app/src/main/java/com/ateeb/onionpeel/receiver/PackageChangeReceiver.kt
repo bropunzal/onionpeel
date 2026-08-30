@@ -1,9 +1,9 @@
-package com.ateeb.dumbphone.receiver
+package com.ateeb.onionpeel.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.ateeb.dumbphone.DumbphoneApp
+import com.ateeb.onionpeel.OnionpeelApp
 
 class PackageChangeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -12,7 +12,7 @@ class PackageChangeReceiver : BroadcastReceiver() {
         ) {
             return
         }
-        val app = DumbphoneApp.get(context.applicationContext as android.app.Application)
-        app.dumbMode.reapplyIfActive()
+        val app = OnionpeelApp.get(context.applicationContext as android.app.Application)
+        app.peelMode.reapplyIfActive()
     }
 }

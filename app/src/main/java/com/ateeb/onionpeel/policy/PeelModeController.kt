@@ -1,6 +1,5 @@
-package com.ateeb.dumbphone.policy
+package com.ateeb.onionpeel.policy
 
-import android.app.Application
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -9,10 +8,10 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.UserManager
 import android.util.Log
-import com.ateeb.dumbphone.admin.DumbphoneDeviceAdminReceiver
-import com.ateeb.dumbphone.data.PrefsRepository
+import com.ateeb.onionpeel.admin.OnionpeelDeviceAdminReceiver
+import com.ateeb.onionpeel.data.PrefsRepository
 
-class DumbModeController(
+class PeelModeController(
     private val context: Context,
     private val prefs: PrefsRepository,
 ) {
@@ -20,41 +19,50 @@ class DumbModeController(
         context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
 
     private val admin: ComponentName =
-        ComponentName(context, DumbphoneDeviceAdminReceiver::class.java)
+        ComponentName(context, OnionpeelDeviceAdminReceiver::class.java)
+
+    private val urlPolicy = BrowserUrlPolicy(context, admin, dpm)
 
     fun isDeviceOwner(): Boolean = dpm.isDeviceOwnerApp(context.packageName)
 
     fun isAdminActive(): Boolean = dpm.isAdminActive(admin)
 
-    fun enableDumbMode(): Result<Unit> {
+    fun enablePeelMode(): Result<Unit> {
         if (!isDeviceOwner()) {
             return Result.failure(IllegalStateException("Not device owner"))
         }
         return runCatching {
             applyInstallRestrictions(enable = true)
             suspendNonAllowedPackages()
-            prefs.dumbModeActive = true
+            urlPolicy.apply(prefs.getBlockedUrls())
+            prefs.peelModeActive = true
             prefs.clearExitRequest()
-            Log.i(TAG, "Dumb mode enabled")
+            Log.i(TAG, "Peel mode enabled")
         }
     }
 
-    fun disableDumbMode(): Result<Unit> {
+    fun disablePeelMode(): Result<Unit> {
         if (!isDeviceOwner()) {
             return Result.failure(IllegalStateException("Not device owner"))
         }
         return runCatching {
             unsuspendAllUserPackages()
             applyInstallRestrictions(enable = false)
-            prefs.dumbModeActive = false
+            urlPolicy.clear()
+            prefs.peelModeActive = false
             prefs.clearExitRequest()
-            Log.i(TAG, "Dumb mode disabled")
+            Log.i(TAG, "Peel mode disabled")
         }
     }
 
+    fun applyUrlBlocklist() {
+        if (!isDeviceOwner() || !prefs.peelModeActive) return
+        urlPolicy.apply(prefs.getBlockedUrls())
+    }
+
     fun requestExit(): Result<Long> {
-        if (!prefs.dumbModeActive) {
-            return Result.failure(IllegalStateException("Dumb mode is not active"))
+        if (!prefs.peelModeActive) {
+            return Result.failure(IllegalStateException("Peel mode is not active"))
         }
         if (prefs.exitRequestedAtMillis > 0L) {
             return Result.success(prefs.exitRequestedAtMillis)
@@ -79,7 +87,7 @@ class DumbModeController(
         if (readyAt <= 0L || System.currentTimeMillis() < readyAt) {
             return false
         }
-        disableDumbMode()
+        disablePeelMode()
         return true
     }
 
@@ -89,16 +97,17 @@ class DumbModeController(
             return Result.failure(IllegalStateException("No emergency passes left this month"))
         }
         prefs.emergencyUsesThisMonth += 1
-        disableDumbMode()
+        disablePeelMode()
         return Result.success(Unit)
     }
 
     fun reapplyIfActive() {
-        if (!isDeviceOwner() || !prefs.dumbModeActive) return
+        if (!isDeviceOwner() || !prefs.peelModeActive) return
         tryCompleteExitIfReady()
-        if (!prefs.dumbModeActive) return
+        if (!prefs.peelModeActive) return
         applyInstallRestrictions(enable = true)
         suspendNonAllowedPackages()
+        urlPolicy.apply(prefs.getBlockedUrls())
     }
 
     private fun applyInstallRestrictions(enable: Boolean) {
@@ -117,25 +126,29 @@ class DumbModeController(
 
     private fun suspendNonAllowedPackages() {
         val allow = buildEffectiveAllowList()
-        val toSuspend = mutableListOf<String>()
+        val toSuspend = mutableSetOf<String>()
+
+        // Preinstalled feed apps (e.g. YouTube on Samsung) are system packages and
+        // are excluded from installedUserPackages() — suspend them explicitly.
+        for (pkg in HARD_BLOCK_APPS) {
+            if (isInstalled(pkg)) toSuspend.add(pkg)
+        }
 
         for (app in installedUserPackages()) {
             val pkg = app.packageName
-            if (pkg in DumbModeController.HARD_BLOCK_SUGGESTIONS) {
-                toSuspend.add(pkg)
-                continue
-            }
+            if (pkg in HARD_BLOCK_APPS) continue
             if (pkg in allow) continue
             if (isEssentialSystem(pkg)) continue
             toSuspend.add(pkg)
         }
 
-        suspendInChunks(toSuspend, suspend = true)
+        suspendInChunks(toSuspend.toList(), suspend = true)
         Log.i(TAG, "Suspended ${toSuspend.size} packages")
     }
 
     private fun unsuspendAllUserPackages() {
-        val suspended = installedUserPackages()
+        val suspended = context.packageManager
+            .getInstalledApplications(PackageManager.GET_META_DATA)
             .map { it.packageName }
             .filter { pkg ->
                 runCatching { dpm.isPackageSuspended(admin, pkg) }.getOrDefault(false)
@@ -180,14 +193,20 @@ class DumbModeController(
             packageName == resolveDefaultLauncher()
     }
 
+    private fun isInstalled(packageName: String): Boolean {
+        return runCatching {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        }.getOrDefault(false)
+    }
+
     private fun isEssentialSystem(packageName: String): Boolean {
-        // Telephony stack — keep callable even if not on allow-list
         val essentials = setOf(
             "com.android.phone",
             "com.android.server.telecom",
             "com.android.systemui",
             "com.android.providers.telephony",
-            "com.google.android.gms", // needed on many devices for dialer/maps
+            "com.google.android.gms",
         )
         return packageName in essentials
     }
@@ -201,10 +220,10 @@ class DumbModeController(
     }
 
     companion object {
-        private const val TAG = "DumbModeController"
+        private const val TAG = "PeelModeController"
 
-        /** Known feed / browser packages — always suspended in dumb mode even if user toggles allow-list wrong */
-        val HARD_BLOCK_SUGGESTIONS: Set<String> = setOf(
+        /** Feed apps — suspended in peel mode regardless of allow-list mistakes */
+        val HARD_BLOCK_APPS: Set<String> = setOf(
             "com.instagram.android",
             "com.google.android.youtube",
             "com.zhiliaoapp.musically",
@@ -212,11 +231,6 @@ class DumbModeController(
             "com.reddit.frontpage",
             "com.facebook.katana",
             "com.snapchat.android",
-            "com.android.chrome",
-            "org.mozilla.firefox",
-            "com.brave.browser",
-            "com.opera.browser",
-            "com.microsoft.emmx",
         )
     }
 }

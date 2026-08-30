@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Dumbphone</string>
-    <string name="device_admin_label">Dumbphone device policy</string>
-    <string name="device_admin_description">Enforces allow-list dumb phone mode on this device. Only install on a phone you own and intend to restrict.</string>
-    <string name="device_admin_enabled">Dumbphone policy enabled</string>
-    <string name="device_admin_disabled">Dumbphone policy disabled</string>
+    <string name="app_name">Onionpeel</string>
+    <string name="device_admin_label">Onionpeel device policy</string>
+    <string name="device_admin_description">Enforces allow-list peel mode on this device. Only install on a phone you own and intend to restrict.</string>
+    <string name="device_admin_enabled">Onionpeel policy enabled</string>
+    <string name="device_admin_disabled">Onionpeel policy disabled</string>
 </resources>
