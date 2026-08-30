@@ -8,7 +8,7 @@ Set-Location $Root
 $gradleOut = Get-Content "$Root\app\build.gradle.kts" -Raw
 if ($gradleOut -match 'versionName\s*=\s*"([^"]+)"') { $version = $Matches[1] } else { $version = "0.0.0" }
 
-Write-Host "Building Onionpeel $version ..."
+Write-Host "Building OnionPeel $version ..."
 & "$Root\gradlew.bat" assembleDebug
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

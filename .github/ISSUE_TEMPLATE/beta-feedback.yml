@@ -1,12 +1,12 @@
 name: Beta feedback
-description: Report bugs, setup issues, or ideas from the Onionpeel closed beta
+description: Report bugs, setup issues, or ideas from the OnionPeel closed beta
 title: "[Beta] "
 labels: ["beta"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing Onionpeel. **Do not paste pairing tokens** — they control your phone.
+        Thanks for testing OnionPeel. **Do not paste pairing tokens** — they control your phone.
 
   - type: input
     id: device
@@ -27,7 +27,7 @@ body:
   - type: input
     id: app-version
     attributes:
-      label: Onionpeel version (bottom of phone app)
+      label: OnionPeel version (bottom of phone app)
       placeholder: e.g. 0.2.0-beta.1
     validations:
       required: true

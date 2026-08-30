@@ -1,17 +1,17 @@
-# Onionpeel desktop companion
+# OnionPeel desktop companion
 
 Shift-style control: **peel mode is toggled only in this browser UI**, not on the phone.
 
 ## Start
 
 ```powershell
-cd C:\Users\Ateeb\dumbphone\companion
+cd companion
 npm install
 copy .env.example .env   # optional — set ONIONPEEL_TOKEN for stable pairing
 npm start
 ```
 
-Open `http://localhost:8787` on your PC. Copy the **pairing token** and your PC's LAN IP (shown in the terminal) into the Onionpeel app on your phone.
+Open `http://localhost:8787` on your PC. Copy the **pairing token** and your PC's LAN IP (shown in the terminal) into the OnionPeel app on your phone.
 
 For closed beta, **set a fixed token** in `.env` so testers do not re-link after every companion restart.
 

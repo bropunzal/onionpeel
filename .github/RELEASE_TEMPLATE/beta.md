@@ -12,7 +12,7 @@
 ### Tester package
 1. Download **`onionpeel-0.2.0-beta.1.apk`** below
 2. Clone this repo (or download ZIP) for the **`companion/`** folder
-3. Read **[BETA.md](https://github.com/bropunzal/dumbphone/blob/main/BETA.md)** — factory reset required
+3. Read **[BETA.md](https://github.com/bropunzal/onionpeel/blob/main/BETA.md)** — factory reset required
 
 ### Quick companion start
 ```powershell
@@ -23,7 +23,7 @@ npm start
 ```
 
 ### Feedback
-[Open a beta feedback issue](https://github.com/bropunzal/dumbphone/issues/new?template=beta-feedback.yml)
+[Open a beta feedback issue](https://github.com/bropunzal/onionpeel/issues/new?template=beta-feedback.yml)
 
 ### Known limitations
-See [BETA.md#known-limitations-beta](https://github.com/bropunzal/dumbphone/blob/main/BETA.md#known-limitations-beta)
+See [BETA.md#known-limitations-beta](https://github.com/bropunzal/onionpeel/blob/main/BETA.md#known-limitations-beta)

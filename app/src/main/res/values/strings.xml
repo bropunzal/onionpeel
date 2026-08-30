@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Onionpeel</string>
-    <string name="device_admin_label">Onionpeel device policy</string>
+    <string name="app_name">OnionPeel</string>
+    <string name="device_admin_label">OnionPeel device policy</string>
     <string name="device_admin_description">Enforces allow-list peel mode on this device. Only install on a phone you own and intend to restrict.</string>
-    <string name="device_admin_enabled">Onionpeel policy enabled</string>
-    <string name="device_admin_disabled">Onionpeel policy disabled</string>
+    <string name="device_admin_enabled">OnionPeel policy enabled</string>
+    <string name="device_admin_disabled">OnionPeel policy disabled</string>
 </resources>

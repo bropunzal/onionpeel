@@ -1,5 +1,5 @@
 /**
- * Onionpeel desktop companion — peel, policy, and delayed unpeel are controlled here.
+ * OnionPeel desktop companion — peel, policy, and delayed unpeel are controlled here.
  * Phone polls GET /api/sync on the same Wi-Fi LAN.
  */
 const http = require("http");
@@ -229,7 +229,7 @@ const server = http.createServer(app);
 server.listen(PORT, "0.0.0.0", () => {
   const ips = getLanIps();
   const tokenSource = process.env.ONIONPEEL_TOKEN ? "from ONIONPEEL_TOKEN / .env" : "random (set ONIONPEEL_TOKEN for beta)";
-  console.log("\n  Onionpeel companion — closed beta\n");
+  console.log("\n  OnionPeel companion — closed beta\n");
   console.log(`  Browser:  http://localhost:${PORT}`);
   for (const ip of ips) {
     console.log(`  Phone URL: http://${ip}:${PORT}`);

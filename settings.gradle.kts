@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Onionpeel"
+rootProject.name = "OnionPeel"
 include(":app")

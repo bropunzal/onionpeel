@@ -1,4 +1,4 @@
-# Onionpeel — Closed Beta (v0.2)
+# OnionPeel — Closed Beta (v0.2)
 
 Thank you for testing. This is an **allow-list dumb phone** controlled **only from your desktop browser**. Peel mode uses Android **Device Owner** — setup is involved but intentional.
 
@@ -22,12 +22,12 @@ Thank you for testing. This is an **allow-list dumb phone** controlled **only fr
 
 ## Download
 
-1. Get the latest **`onionpeel-*-beta.apk`** from [GitHub Releases](https://github.com/bropunzal/dumbphone/releases) (or link your organizer sent you).
+1. Get the latest **`onionpeel-*-beta.apk`** from [GitHub Releases](https://github.com/bropunzal/onionpeel/releases) (or link your organizer sent you).
 2. Clone or download this repo for the **desktop companion** (`companion/` folder).
 
 ## Setup (one-time)
 
-Follow the **13-step guide** in the Onionpeel app or at `http://localhost:8787` (Show steps) after starting the companion.
+Follow the **13-step guide** in the OnionPeel app or at `http://localhost:8787` (Show steps) after starting the companion.
 
 ### Summary
 
@@ -62,7 +62,7 @@ npm start
 Open `http://localhost:8787` → copy **Phone URL** + **token**.
 
 **Phone app**
-- Open Onionpeel → enter URL + token → **LINK DESKTOP**
+- Open OnionPeel → enter URL + token → **LINK DESKTOP**
 - Wait ~15s for sync
 - On desktop: set blocked sites, allowed apps, unpeel delay → **Peel phone**
 
@@ -112,7 +112,7 @@ If companion **restarts**, token may change — re-link on phone unless you set 
 
 ## Feedback
 
-Please report via [GitHub Issues](https://github.com/bropunzal/dumbphone/issues/new/choose) → **Beta feedback**, including:
+Please report via [GitHub Issues](https://github.com/bropunzal/onionpeel/issues/new/choose) → **Beta feedback**, including:
 
 - Phone model + Android version
 - What you expected vs what happened
@@ -137,9 +137,9 @@ Please report via [GitHub Issues](https://github.com/bropunzal/dumbphone/issues/
 ## For maintainers (shipping a beta build)
 
 1. Bump `versionCode` / `versionName` in `app/build.gradle.kts`.
-2. Run `.\scripts\build-beta.ps1` — outputs `releases/onionpeel-<version>-beta.apk`.
+2. Run `.\scripts\build-beta.ps1` — outputs `releases/onionpeel-<version>.apk`.
 3. Commit source changes; push to `main`.
-4. Create a [GitHub Release](https://github.com/bropunzal/dumbphone/releases/new) tagged `v0.2.0-beta.1` (match `versionName`).
+4. Create a [GitHub Release](https://github.com/bropunzal/onionpeel/releases/new) tagged `v0.2.0-beta.1` (match `versionName`).
 5. Attach the APK; paste notes from `.github/RELEASE_TEMPLATE/beta.md`.
 6. Send testers: release link + `BETA.md` + `companion/` folder (or full repo clone).
 
