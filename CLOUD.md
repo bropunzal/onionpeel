@@ -26,8 +26,11 @@ Local `npm start` still works for development (legacy single-token mode via `ONI
 | `PUBLIC_URL` | Yes | `https://onionpeel-production.up.railway.app` |
 | `PORT` | Auto-set by Railway | `8787` |
 | `DATA_DIR` | Yes (with volume) | `/data` |
+| `BETA_INVITE_CODES` | Yes for closed beta | `onion-beta-2026,friend-invite-1` |
 
 Do **not** set `ONIONPEEL_TOKEN` in production — that enables legacy single-device mode.
+
+When `BETA_INVITE_CODES` is set, testers must **create an account** with an invite code before they can create a device pairing. Each tester gets their own login; device tokens still control the phone.
 
 ### 3. Persistent storage
 
@@ -48,7 +51,7 @@ curl -X POST https://YOUR_URL/api/devices
 # {"token":"...","serverUrl":"https://YOUR_URL"}
 ```
 
-Open the URL in a browser → **Create new device** → copy Server URL + token to the phone app.
+Open the URL in a browser → **Create account** (invite code) → **Create new device** → copy Server URL + token to the phone app.
 
 ## Local development
 
@@ -64,7 +67,8 @@ Multi-device mode runs when `ONIONPEEL_TOKEN` is **not** set.
 ## Security notes
 
 - Pairing tokens are secrets — treat like passwords
-- `POST /api/devices` is rate-limited (5/hour/IP)
+- Beta invite codes gate who can register — share privately with testers
+- `POST /api/devices` and auth endpoints are rate-limited (5/hour/IP)
 - `/api/status` requires Bearer auth (token never leaked publicly)
 - Use HTTPS in production (`PUBLIC_URL` must start with `https://`)
 

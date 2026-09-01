@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { createAuthStore, betaLoginRequired } = require("./auth");
 
 function loadDotEnv() {
   const envPath = path.join(__dirname, ".env");
@@ -63,7 +64,7 @@ const DEFAULT_ALLOW_LIST = [
 
 const legacyMode = Boolean(LEGACY_TOKEN);
 
-function defaultDeviceState() {
+function defaultDeviceState(ownerUserId = null) {
   return {
     peelDesired: false,
     unpeelAt: null,
@@ -72,6 +73,7 @@ function defaultDeviceState() {
     allowList: [...DEFAULT_ALLOW_LIST],
     lastPhoneReport: null,
     createdAt: Date.now(),
+    ownerUserId,
   };
 }
 
@@ -87,6 +89,7 @@ function loadDevices() {
 }
 
 let devices = loadDevices();
+const authStore = createAuthStore(DATA_DIR);
 
 function saveDevices() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -171,6 +174,23 @@ function extractToken(req) {
   return req.query.token || "";
 }
 
+function extractSessionToken(req) {
+  const header = req.headers["x-session-token"];
+  if (header) return header;
+  const cookie = req.headers.cookie || "";
+  const match = cookie.match(/(?:^|;\s*)onionpeel_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function requireSession(req, res, next) {
+  const session = authStore.getSession(extractSessionToken(req));
+  if (!session) {
+    return res.status(401).json({ error: "login_required" });
+  }
+  req.sessionUser = session;
+  next();
+}
+
 function auth(req, res, next) {
   const token = extractToken(req);
   const state = devices[token];
@@ -213,10 +233,74 @@ app.get("/api/info", (req, res) => {
     serverUrl: publicServerUrl(req),
     legacyMode,
     multiDevice: !legacyMode,
+    betaLoginRequired: betaLoginRequired(),
   });
 });
 
-/** Public: create a new paired device (multi-device mode only) */
+/** Beta: register a tester account */
+app.post("/api/auth/register", rateLimitCreate, (req, res) => {
+  const result = authStore.register({
+    email: req.body.email,
+    password: req.body.password,
+    inviteCode: req.body.inviteCode,
+  });
+  if (result.error) {
+    const status = result.error === "email_taken" ? 409 : 400;
+    return res.status(status).json(result);
+  }
+  const sessionToken = authStore.createSession(result.userId);
+  res.status(201).json({
+    sessionToken,
+    email: result.email,
+  });
+});
+
+/** Beta: log in */
+app.post("/api/auth/login", rateLimitCreate, (req, res) => {
+  const result = authStore.login({
+    email: req.body.email,
+    password: req.body.password,
+  });
+  if (result.error) {
+    return res.status(401).json({ error: "invalid_credentials" });
+  }
+  const sessionToken = authStore.createSession(result.userId);
+  res.json({
+    sessionToken,
+    email: result.email,
+  });
+});
+
+/** Beta: current session */
+app.get("/api/auth/me", (req, res) => {
+  const session = authStore.getSession(extractSessionToken(req));
+  if (!session) {
+    return res.status(401).json({ error: "login_required" });
+  }
+  res.json({ email: session.email });
+});
+
+/** Beta: log out */
+app.post("/api/auth/logout", (req, res) => {
+  authStore.deleteSession(extractSessionToken(req));
+  res.json({ ok: true });
+});
+
+/** List devices for the logged-in beta tester */
+app.get("/api/devices", requireSession, (req, res) => {
+  const owned = Object.entries(devices)
+    .filter(([, state]) => state.ownerUserId === req.sessionUser.userId)
+    .map(([token, state]) => ({
+      token,
+      label: state.label || `Device ${token.slice(0, 6)}`,
+      createdAt: state.createdAt,
+      lastPhoneReport: state.lastPhoneReport,
+    }))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  res.json({ devices: owned });
+});
+
+/** Create a new paired device (multi-device mode only) */
 app.post("/api/devices", rateLimitCreate, (req, res) => {
   if (legacyMode) {
     return res.status(400).json({
@@ -224,12 +308,25 @@ app.post("/api/devices", rateLimitCreate, (req, res) => {
       message: "This server uses a fixed ONIONPEEL_TOKEN. Use that token instead of creating a device.",
     });
   }
+  if (betaLoginRequired()) {
+    const session = authStore.getSession(extractSessionToken(req));
+    if (!session) {
+      return res.status(401).json({ error: "login_required" });
+    }
+    req.sessionUser = session;
+  }
   const token = crypto.randomBytes(24).toString("hex");
-  devices[token] = defaultDeviceState();
+  const ownerUserId = req.sessionUser?.userId || null;
+  const label = String(req.body.label || "").trim().slice(0, 64);
+  devices[token] = {
+    ...defaultDeviceState(ownerUserId),
+    ...(label ? { label } : {}),
+  };
   saveDevices();
   res.status(201).json({
     token,
     serverUrl: publicServerUrl(req),
+    label: devices[token].label || null,
   });
 });
 
@@ -339,6 +436,8 @@ server.listen(PORT, "0.0.0.0", () => {
   }
   if (legacyMode) {
     console.log(`\n  Legacy mode — fixed token: ${LEGACY_TOKEN}\n`);
+  } else if (betaLoginRequired()) {
+    console.log("\n  Beta login enabled — testers register with invite code, then create devices\n");
   } else {
     console.log("\n  Multi-device mode — create devices at /api/devices or in the web UI\n");
   }

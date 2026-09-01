@@ -6,7 +6,7 @@ Shift-style control: **peel mode is toggled only in the browser UI**, not on the
 
 Deploy to Railway — see **[CLOUD.md](../CLOUD.md)**.
 
-Testers open the public HTTPS URL → **Create new device** → copy Server URL + token to the phone app.
+Testers open the public HTTPS URL → **Create account** (invite code) → **Create new device** → copy Server URL + token to the phone app.
 
 ## Local dev
 
@@ -31,7 +31,11 @@ Open `http://localhost:8787`. Without `ONIONPEEL_TOKEN`, the server runs multi-d
 | Endpoint | Auth | Purpose |
 |----------|------|---------|
 | `GET /api/info` | none | Server URL, mode |
-| `POST /api/devices` | none | Create pairing (rate-limited) |
+| `POST /api/auth/register` | none | Beta signup (invite code) |
+| `POST /api/auth/login` | none | Beta sign-in |
+| `GET /api/auth/me` | session | Current user |
+| `GET /api/devices` | session | List user's devices |
+| `POST /api/devices` | session (beta) | Create pairing (rate-limited) |
 | `GET /api/sync` | Bearer | Phone poll |
 | `GET /api/status` | Bearer | Browser dashboard |
 | `POST /api/peel`, `/api/policy`, … | Bearer | Control |

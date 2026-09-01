@@ -51,8 +51,10 @@ Expected: `Success: Device owner set to package com.ateeb.onionpeel/...`
 
 **Cloud companion**
 1. Open the companion URL (from organizer, or see [CLOUD.md](CLOUD.md)).
-2. Click **Create new device**.
-3. Copy **Server URL** + **pairing token**.
+2. **Create account** with your beta invite code, or **Sign in** if you already have one.
+3. Click **Create new device** → copy **Server URL** + **pairing token**.
+
+Each tester has their own login. Return from any browser by signing in and selecting your device (or paste your saved token).
 
 **Phone app**
 - Open OnionPeel → enter Server URL + token → **LINK DESKTOP**
@@ -132,6 +134,6 @@ See [CLOUD.md](CLOUD.md) (companion deploy), [PLAY.md](PLAY.md) (Play Console), 
 **Ship checklist:**
 1. Bump `versionCode` / `versionName` in `app/build.gradle.kts`.
 2. `.\scripts\build-release.ps1` → signed AAB for Play + APK for GitHub.
-3. Deploy companion to Railway with `PUBLIC_URL` + volume at `/data`.
+3. Deploy companion to Railway with `PUBLIC_URL` + volume at `/data` + `BETA_INVITE_CODES`.
 4. Upload AAB to Play closed testing; attach APK to GitHub Release.
-5. Send testers: Play link + companion URL + `BETA.md`.
+5. Send testers: Play link + companion URL + invite code + `BETA.md`.
