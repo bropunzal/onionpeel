@@ -309,6 +309,40 @@
 
     .main-app { display: none; }
     .main-app.ready { display: block; }
+
+    .lock-banner {
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: rgba(109, 104, 72, 0.12);
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--khaki-muted);
+      margin-bottom: 14px;
+    }
+
+    .settings-panel {
+      display: none;
+      margin-top: 4px;
+    }
+
+    .settings-panel.open { display: block; }
+
+    .settings-section {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--stroke);
+    }
+
+    .settings-section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .locked input,
+    .locked button:not(.btn-settings-toggle),
+    .locked .app-row { opacity: 0.45; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -353,6 +387,7 @@
       <button class="btn" id="toggle" type="button">Peel phone</button>
       <button class="btn small" id="cancelUnpeel" type="button" style="display:none; margin-top:10px; width:100%;">Cancel unpeel</button>
       <p class="status" id="phoneStatus">Waiting for phone…</p>
+      <p class="status" id="repeelStatus" style="display:none; margin-top:6px;"></p>
 
       <div class="token-box">
         <p class="label">Server URL (enter on phone)</p>
@@ -364,32 +399,54 @@
       </div>
     </div>
 
-    <div class="card">
-      <p class="label">Unpeel delay</p>
-      <p class="hint">When you request unpeel, the phone stays peeled for this many hours before opening.</p>
-      <div class="row" style="margin-top:12px;">
-        <input type="number" id="exitDelayHours" min="1" max="168" value="24" />
-        <span style="font-size:13px; color: var(--khaki-muted);">hours</span>
-        <button class="btn small" id="saveDelay" type="button">Save</button>
+    <div class="card" id="settingsCard">
+      <p class="label">Policy settings</p>
+      <p class="hint" id="settingsHint">Configure delays, allowed apps, and blocked sites while the phone is open.</p>
+      <div class="lock-banner" id="policyLockBanner" style="display:none;">
+        Policy is locked while the phone is peeled. You cannot add apps or sites until the phone is open.
       </div>
-      <p class="status" id="delayStatus"></p>
-    </div>
+      <button class="btn small btn-settings-toggle" id="toggleSettings" type="button" style="margin-top:12px;">Show policy settings</button>
 
-    <div class="card">
-      <p class="label">Blocked sites</p>
-      <p class="hint">Chrome, Edge & Samsung Internet. Edit anytime — phone syncs within ~15s.</p>
-      <div class="row" style="margin-top:12px;">
-        <input type="text" id="urlInput" placeholder="domain.com" />
-        <button class="btn small" id="addUrl" type="button">Add</button>
+      <div class="settings-panel" id="settingsPanel">
+        <div class="settings-section" id="delaySection">
+          <p class="label">Unpeel delay</p>
+          <p class="hint">When you request unpeel, the phone stays peeled for this many hours before opening.</p>
+          <div class="row" style="margin-top:12px;">
+            <input type="number" id="exitDelayHours" min="1" max="168" value="24" />
+            <span style="font-size:13px; color: var(--khaki-muted);">hours</span>
+            <button class="btn small" id="saveDelay" type="button">Save</button>
+          </div>
+          <p class="status" id="delayStatus"></p>
+        </div>
+
+        <div class="settings-section" id="repeelSection">
+          <p class="label">Auto-peel after open</p>
+          <p class="hint">When the phone opens, it will automatically peel again after this many hours.</p>
+          <div class="row" style="margin-top:12px;">
+            <input type="number" id="repeelDelayHours" min="1" max="168" value="24" />
+            <span style="font-size:13px; color: var(--khaki-muted);">hours</span>
+            <button class="btn small" id="saveRepeelDelay" type="button">Save</button>
+          </div>
+          <p class="status" id="repeelDelayStatus"></p>
+        </div>
+
+        <div class="settings-section" id="urlsSection">
+          <p class="label">Blocked sites</p>
+          <p class="hint">Chrome, Edge & Samsung Internet. Changes apply on the next open window.</p>
+          <div class="row" style="margin-top:12px;">
+            <input type="text" id="urlInput" placeholder="domain.com" />
+            <button class="btn small" id="addUrl" type="button">Add</button>
+          </div>
+          <ul class="list" id="urlList"></ul>
+        </div>
+
+        <div class="settings-section" id="appsSection">
+          <p class="label">Allowed apps</p>
+          <p class="hint" id="appsHint">App list appears after the phone syncs once. IDs are Android package names or iOS bundle IDs.</p>
+          <div class="apps" id="appList"></div>
+          <button class="btn primary" id="saveApps" type="button" style="margin-top:14px; display:none;">Save allowed apps</button>
+        </div>
       </div>
-      <ul class="list" id="urlList"></ul>
-    </div>
-
-    <div class="card">
-      <p class="label">Allowed apps</p>
-      <p class="hint" id="appsHint">App list appears after the phone syncs once.</p>
-      <div class="apps" id="appList"></div>
-      <button class="btn primary" id="saveApps" type="button" style="margin-top:14px; display:none;">Save allowed apps</button>
     </div>
 
     <div class="card">
@@ -408,7 +465,7 @@
         <li><strong>9 · Create device here</strong>Click <em>Create new device</em> above (or use existing token).</li>
         <li><strong>10 · Copy URL + token</strong>Server URL: <code id="phoneUrlHint">https://your-server</code> · Token shown above.</li>
         <li class="warn"><strong>11 · Link on phone</strong>Open OnionPeel → enter URL + token → LINK DESKTOP → wait ~15s.</li>
-        <li><strong>12 · Configure here</strong>Set blocked sites, allowed apps, and unpeel delay hours on this page.</li>
+        <li><strong>12 · Configure here</strong>Open <em>Policy settings</em> to set blocked sites, allowed apps, unpeel delay, and auto-peel timer.</li>
         <li class="warn"><strong>13 · Peel phone</strong>Use the button above. The phone cannot peel or unpeel itself.</li>
       </ol>
       <div class="notes" id="setupNotes" style="display:none;">
@@ -427,12 +484,17 @@
     let legacyMode = false;
     let peelDesired = false;
     let unpeelAt = null;
+    let repeelAt = null;
     let exitDelayHours = 24;
+    let repeelDelayHours = 24;
+    let policyLocked = false;
     let blockedUrls = [];
     let allowList = [];
     let phoneApps = [];
     let appsDirty = false;
+    let appsSaveTimer = null;
     let refreshTimer = null;
+    let settingsOpen = false;
 
     const pairingOverlay = document.getElementById("pairingOverlay");
     const mainApp = document.getElementById("mainApp");
@@ -456,6 +518,12 @@
     const appsHint = document.getElementById("appsHint");
     const saveApps = document.getElementById("saveApps");
     const delayStatus = document.getElementById("delayStatus");
+    const repeelDelayStatus = document.getElementById("repeelDelayStatus");
+    const repeelStatus = document.getElementById("repeelStatus");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const toggleSettings = document.getElementById("toggleSettings");
+    const policyLockBanner = document.getElementById("policyLockBanner");
+    const settingsCard = document.getElementById("settingsCard");
     const setupGuide = document.getElementById("setupGuide");
     const setupNotes = document.getElementById("setupNotes");
     const toggleGuide = document.getElementById("toggleGuide");
@@ -482,6 +550,7 @@
         refreshTimer = setInterval(() => {
           refresh();
           if (unpeelAt && Date.now() >= unpeelAt) renderPeel();
+          if (repeelAt && Date.now() >= repeelAt) renderPeel();
         }, 5000);
       }
     }
@@ -529,6 +598,12 @@
       }
     });
 
+    toggleSettings.addEventListener("click", () => {
+      settingsOpen = !settingsOpen;
+      settingsPanel.classList.toggle("open", settingsOpen);
+      toggleSettings.textContent = settingsOpen ? "Hide policy settings" : "Show policy settings";
+    });
+
     toggleGuide.addEventListener("click", () => {
       guideOpen = !guideOpen;
       setupGuide.style.display = guideOpen ? "block" : "none";
@@ -561,16 +636,37 @@
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
+    function renderPolicyLock() {
+      policyLockBanner.style.display = policyLocked ? "block" : "none";
+      settingsCard.classList.toggle("locked", policyLocked);
+      document.getElementById("exitDelayHours").disabled = policyLocked;
+      document.getElementById("repeelDelayHours").disabled = policyLocked;
+      document.getElementById("saveDelay").disabled = policyLocked;
+      document.getElementById("saveRepeelDelay").disabled = policyLocked;
+      document.getElementById("urlInput").disabled = policyLocked;
+      document.getElementById("addUrl").disabled = policyLocked;
+      saveApps.disabled = policyLocked;
+      if (policyLocked) {
+        document.getElementById("settingsHint").textContent =
+          "Policy is locked while peeled. Open the settings to review, but changes are disabled until the phone is open.";
+      } else {
+        document.getElementById("settingsHint").textContent =
+          "Configure delays, allowed apps, and blocked sites while the phone is open.";
+      }
+    }
+
     function renderUrls() {
       urlList.innerHTML = "";
       for (const url of blockedUrls) {
         const li = document.createElement("li");
-        li.innerHTML = `<span>${url}</span><button type="button" data-url="${url}">Remove</button>`;
-        li.querySelector("button").addEventListener("click", async () => {
-          blockedUrls = blockedUrls.filter((u) => u !== url);
-          await savePolicy({ blockedUrls });
-          renderUrls();
-        });
+        li.innerHTML = `<span>${url}</span><button type="button" data-url="${url}" ${policyLocked ? "disabled" : ""}>Remove</button>`;
+        if (!policyLocked) {
+          li.querySelector("button").addEventListener("click", async () => {
+            blockedUrls = blockedUrls.filter((u) => u !== url);
+            await savePolicy({ blockedUrls });
+            renderUrls();
+          });
+        }
         urlList.appendChild(li);
       }
     }
@@ -582,69 +678,114 @@
         saveApps.style.display = "none";
         return;
       }
-      appsHint.textContent = "Check apps the phone may open while peeled. Feed apps stay hard-blocked.";
-      saveApps.style.display = "block";
+      appsHint.textContent = policyLocked
+        ? "Allowed apps cannot change while peeled."
+        : "Check apps the phone may open while peeled. Feed apps stay hard-blocked.";
+      saveApps.style.display = policyLocked ? "none" : "block";
       for (const app of phoneApps) {
         const row = document.createElement("label");
         row.className = "app-row";
         const checked = allowList.includes(app.packageName);
-        row.innerHTML = `<input type="checkbox" data-pkg="${app.packageName}" ${checked ? "checked" : ""} /><span>${app.label}<small>${app.packageName}</small></span>`;
-        row.querySelector("input").addEventListener("change", (e) => {
-          const pkg = e.target.dataset.pkg;
-          if (e.target.checked) {
-            if (!allowList.includes(pkg)) allowList.push(pkg);
-          } else {
-            allowList = allowList.filter((p) => p !== pkg);
-          }
-          appsDirty = true;
-        });
+        row.innerHTML = `<input type="checkbox" data-pkg="${app.packageName}" ${checked ? "checked" : ""} ${policyLocked ? "disabled" : ""} /><span>${app.label}<small>${app.packageName}</small></span>`;
+        if (!policyLocked) {
+          row.querySelector("input").addEventListener("change", (e) => {
+            const pkg = e.target.dataset.pkg;
+            if (e.target.checked) {
+              if (!allowList.includes(pkg)) allowList.push(pkg);
+            } else {
+              allowList = allowList.filter((p) => p !== pkg);
+            }
+            appsDirty = true;
+            scheduleAppsSave();
+          });
+        }
         appList.appendChild(row);
       }
     }
 
     function renderPeel() {
       const pending = unpeelAt && Date.now() < unpeelAt;
+      const repeelPending = !peelDesired && repeelAt && Date.now() < repeelAt;
       if (pending) {
         hero.textContent = "UNPEELING";
         hero.className = "pending";
         const left = formatCountdown(unpeelAt - Date.now());
-        subtitle.textContent = `Phone stays peeled for ${left} more. Cancel to keep focus.`;
+        subtitle.textContent = `Phone stays peeled for ${left} more. Cancel to keep focus. Policy is locked.`;
         metricPeel.textContent = `peeled · ${left}`;
         toggle.textContent = "Unpeel scheduled";
         toggle.className = "btn";
         toggle.disabled = true;
         cancelUnpeel.style.display = "block";
+        repeelStatus.style.display = "none";
       } else if (peelDesired) {
         hero.textContent = "PEELED";
         hero.className = "peeled";
-        subtitle.textContent = "Feeds are dead. Chrome URLs blocked. Request unpeel to start the delay timer.";
+        subtitle.textContent = "Feeds are dead. Policy is locked — you cannot add apps or sites while peeled.";
         metricPeel.textContent = "peeled";
         toggle.textContent = "Request unpeel";
         toggle.className = "btn primary";
         toggle.disabled = false;
         cancelUnpeel.style.display = "none";
+        repeelStatus.style.display = "none";
+      } else if (repeelPending) {
+        hero.textContent = "OPEN";
+        hero.className = "open";
+        const left = formatCountdown(repeelAt - Date.now());
+        subtitle.textContent = `Phone is open. It will auto-peel in ${left}. Configure policy in settings before then.`;
+        metricPeel.textContent = `open · peel in ${left}`;
+        toggle.textContent = "Peel now";
+        toggle.className = "btn primary";
+        toggle.disabled = false;
+        cancelUnpeel.style.display = "none";
+        repeelStatus.style.display = "block";
+        repeelStatus.textContent = `Auto-peel in ${left}`;
       } else {
         hero.textContent = "OPEN";
         hero.className = "open";
-        subtitle.textContent = "Phone is unrestricted. Hit peel when you need focus.";
+        subtitle.textContent = "Phone is unrestricted. Set policy in settings, then peel when ready.";
         metricPeel.textContent = "open";
         toggle.textContent = "Peel phone";
         toggle.className = "btn";
         toggle.disabled = false;
         cancelUnpeel.style.display = "none";
+        repeelStatus.style.display = "none";
       }
+      renderPolicyLock();
     }
 
     async function savePolicy(patch) {
-      const data = await api("/api/policy", {
+      if (policyLocked) {
+        alert("Policy is locked while the phone is peeled.");
+        return null;
+      }
+      const res = await fetch("/api/policy", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(patch),
       });
+      if (res.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        location.reload();
+        throw new Error("unauthorized");
+      }
+      if (res.status === 403) {
+        alert("Policy is locked while the phone is peeled.");
+        throw new Error("policy_locked");
+      }
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
       blockedUrls = data.blockedUrls || blockedUrls;
       allowList = data.allowList || allowList;
       exitDelayHours = data.exitDelayHours || exitDelayHours;
+      repeelDelayHours = data.repeelDelayHours || repeelDelayHours;
+      repeelAt = data.repeelAt ?? repeelAt;
       document.getElementById("exitDelayHours").value = exitDelayHours;
+      document.getElementById("repeelDelayHours").value = repeelDelayHours;
       appsDirty = false;
+      return data;
     }
 
     async function refresh() {
@@ -652,7 +793,10 @@
         const data = await api("/api/status");
         peelDesired = data.peelDesired;
         unpeelAt = data.unpeelAt;
+        repeelAt = data.repeelAt ?? null;
+        policyLocked = Boolean(data.policyLocked);
         exitDelayHours = data.exitDelayHours || 24;
+        repeelDelayHours = data.repeelDelayHours || 24;
         blockedUrls = data.blockedUrls || [];
         allowList = data.allowList || [];
         serverUrl = data.serverUrl || serverUrl;
@@ -660,7 +804,13 @@
         serverUrlEl.textContent = serverUrl;
         if (phoneUrlHint) phoneUrlHint.textContent = serverUrl;
         document.getElementById("exitDelayHours").value = exitDelayHours;
-        delayStatus.textContent = `Current delay: ${exitDelayHours} hour(s) per unpeel request`;
+        document.getElementById("repeelDelayHours").value = repeelDelayHours;
+        delayStatus.textContent = policyLocked
+          ? "Locked while peeled"
+          : `Current delay: ${exitDelayHours} hour(s) per unpeel request`;
+        repeelDelayStatus.textContent = policyLocked
+          ? "Locked while peeled"
+          : `Auto-peel after ${repeelDelayHours} hour(s) open`;
 
         if (data.lastPhoneReport?.apps?.length) {
           phoneApps = data.lastPhoneReport.apps;
@@ -695,6 +845,8 @@
         });
         peelDesired = data.peelDesired;
         unpeelAt = data.unpeelAt;
+        repeelAt = data.repeelAt ?? repeelAt;
+        policyLocked = Boolean(data.policyLocked);
         renderPeel();
       } catch (e) {
         alert("Peel toggle failed.");
@@ -707,6 +859,8 @@
         const data = await api("/api/peel/cancel", { method: "POST", body: "{}" });
         peelDesired = data.peelDesired;
         unpeelAt = data.unpeelAt;
+        repeelAt = data.repeelAt ?? repeelAt;
+        policyLocked = Boolean(data.policyLocked);
         renderPeel();
       } catch (e) {
         alert("Cancel failed.");
@@ -726,16 +880,54 @@
 
     document.getElementById("saveDelay").addEventListener("click", async () => {
       const hours = Number(document.getElementById("exitDelayHours").value);
-      await savePolicy({ exitDelayHours: hours });
-      delayStatus.textContent = `Saved: ${exitDelayHours} hour(s) per unpeel request`;
+      try {
+        await savePolicy({ exitDelayHours: hours });
+        delayStatus.textContent = `Saved: ${exitDelayHours} hour(s) per unpeel request`;
+      } catch (e) {
+        if (e.message !== "policy_locked") delayStatus.textContent = "Could not save";
+      }
+    });
+
+    document.getElementById("saveRepeelDelay").addEventListener("click", async () => {
+      const hours = Number(document.getElementById("repeelDelayHours").value);
+      try {
+        await savePolicy({ repeelDelayHours: hours });
+        repeelDelayStatus.textContent = `Saved: auto-peel after ${repeelDelayHours} hour(s) open`;
+        renderPeel();
+      } catch (e) {
+        if (e.message !== "policy_locked") repeelDelayStatus.textContent = "Could not save";
+      }
     });
 
     saveApps.addEventListener("click", async () => {
-      await savePolicy({ allowList });
-      appsDirty = false;
-      saveApps.textContent = "Saved";
-      setTimeout(() => { saveApps.textContent = "Save allowed apps"; }, 1500);
+      if (policyLocked) return;
+      if (appsSaveTimer) clearTimeout(appsSaveTimer);
+      try {
+        await savePolicy({ allowList });
+        appsDirty = false;
+        saveApps.textContent = "Saved";
+        setTimeout(() => { saveApps.textContent = "Save allowed apps"; }, 1500);
+      } catch (e) {
+        saveApps.textContent = "Locked";
+      }
     });
+
+    function scheduleAppsSave() {
+      if (policyLocked) return;
+      if (appsSaveTimer) clearTimeout(appsSaveTimer);
+      saveApps.textContent = "Saving…";
+      saveApps.style.display = "block";
+      appsSaveTimer = setTimeout(async () => {
+        try {
+          await savePolicy({ allowList });
+          appsDirty = false;
+          saveApps.textContent = "Saved";
+          setTimeout(() => { saveApps.textContent = "Save allowed apps"; }, 1500);
+        } catch (e) {
+          saveApps.textContent = "Locked";
+        }
+      }, 600);
+    }
 
     loadServerInfo()
       .then(() => {

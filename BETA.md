@@ -2,6 +2,8 @@
 
 Thank you for testing. This is an **allow-list dumb phone** controlled **only from the cloud companion browser**. Peel mode uses Android **Device Owner** — setup is involved but intentional.
 
+> **iPhone:** See the iOS beta at [bropunzal/onionpeel-ios](https://github.com/bropunzal/onionpeel-ios) — same companion, Screen Time instead of Device Owner.
+
 ## What you need
 
 | Requirement | Notes |

@@ -2,15 +2,25 @@
 
 Allow-list **peel mode** via **Device Owner**, with **browser-only control** (Shift-style). Peel on/off happens only in the cloud companion — the phone shows status and enforces policy.
 
+## Platforms
+
+| Platform | Repo | Status |
+|----------|------|--------|
+| **Android** | [bropunzal/onionpeel](https://github.com/bropunzal/onionpeel) (this repo) | Closed beta (Play + APK) |
+| **iPhone** | [bropunzal/onionpeel-ios](https://github.com/bropunzal/onionpeel-ios) | Beta — build from source (Xcode) |
+
+Both apps use the **same cloud companion** and API. Create a separate device token per phone in the companion browser.
+
 ## Closed beta
 
 **v0.2.0-beta.1** — see **[BETA.md](BETA.md)** for tester onboarding.
 
 | For testers | For maintainers |
 |-------------|-----------------|
-| [BETA.md](BETA.md) setup guide | [CLOUD.md](CLOUD.md) — deploy companion |
-| [Report feedback](https://github.com/bropunzal/onionpeel/issues/new?template=beta-feedback.yml) | [PLAY.md](PLAY.md) — Play closed testing |
-| Install via Play closed testing | `.\scripts\build-release.ps1` → signed AAB |
+| [BETA.md](BETA.md) — Android setup | [CLOUD.md](CLOUD.md) — deploy companion |
+| [onionpeel-ios BETA](https://github.com/bropunzal/onionpeel-ios/blob/main/BETA.md) — iPhone | [PLAY.md](PLAY.md) — Play closed testing |
+| [Report feedback](https://github.com/bropunzal/onionpeel/issues/new?template=beta-feedback.yml) | `.\scripts\build-release.ps1` → signed AAB |
+| Install via Play closed testing | |
 
 ## Quick start
 
